@@ -9,6 +9,5 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
-        sync: false
       - key: PRODPWH_ADDON_URL
         sync: false
