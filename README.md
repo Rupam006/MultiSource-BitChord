@@ -4,8 +4,6 @@ A multi-source BitChord music addon for searching tracks and returning playable 
 
 ## What it provides
 
-- Unified music search across multiple provider services.
-- Concurrent searches within each provider tier.
 - Duplicate-track cleanup, preferring the best reported audio resolution.
 - Playback stream resolution with provider fallback.
 - Lossless, Hi-Res, standard-quality and spatial-audio request preferences.
