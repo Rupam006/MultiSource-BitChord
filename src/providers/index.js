@@ -16,6 +16,10 @@ function normalizeQuality(value) {
   return QUALITY_LEVELS.has(quality) ? quality : "lossless";
 }
 
+function qualityLabel(value) {
+  return ({ lossless: "Maximum Lossless / Hi-Res", high: "High Lossless", low: "Low / Data saver" })[normalizeQuality(value)];
+}
+
 const providers = definitions.map((definition) => ({
   ...definition,
   baseUrl: definition.baseUrl.replace(/\/manifest\.json$/i, "").replace(/\/+$/, ""),
@@ -61,8 +65,13 @@ const providers = definitions.map((definition) => ({
     const sampleRate = Number(streamData.sampleRate ?? streamData.sample_rate);
     const bitDepth = Number(streamData.bitDepth ?? streamData.bit_depth);
     const bitrate = Number(streamData.bitrate);
+    const resolution = Number.isFinite(bitDepth) && bitDepth > 0 && Number.isFinite(sampleRate) && sampleRate > 0
+      ? `${bitDepth}-bit / ${(sampleRate / 1000).toFixed(sampleRate % 1000 === 0 ? 0 : 1)} kHz`
+      : undefined;
     return {
       url,
+      qualityTier: qualityLabel(quality),
+      ...(resolution ? { resolution } : {}),
       codec: streamData.codec || streamData.format || "unknown",
       container: streamData.container || streamData.format || "unknown",
       manifest: streamData.manifest || "none",
