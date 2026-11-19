@@ -16,7 +16,7 @@ A multi-source BitChord music addon that searches independent music providers, c
 |---|---|
 | prodpwh | Private BitChord addon; configured separately |
 | Confih Hi-Res | Confih BitChord addon |
-| Juanjo Monochrome / Tidal | Monochrome catalogue and stream source |
+| Official Monochrome | Official Monochrome Tracks API and direct FLAC streaming |
 | Juanjo Qobuz | Qobuz search and stream source |
 | Juanjo Netease | Netease catalogue/stream bridge |
 | Juanjo Deezer | Deezer catalogue source; playback may resolve through another provider |
