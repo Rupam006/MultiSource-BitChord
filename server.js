@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import http from "node:http";
 import { createBitChordAuth } from "./src/auth.js";
 import { allProviders, findProvider, providerStatus } from "./src/providers/index.js";
@@ -8,28 +9,7 @@ const hostList = (process.env.BITCHORD_HOSTS || process.env.RENDER_EXTERNAL_HOST
   .split(",").map((value) => value.trim()).filter(Boolean);
 const auth = createBitChordAuth({ hosts: hostList });
 
-const manifest = {
-  id: "dev.multisource.bitchord",
-  name: "MultiSource BitChord",
-  version: "1.0.0",
-  description: "Aggregated music search with provider failover.",
-  resources: ["search", "stream"],
-  bitchordAuth: true,
-  allowDownloads: 1,
-  settings: [
-    {
-      key: "quality",
-      type: "select",
-      label: "Audio quality",
-      default: "lossless",
-      options: [
-        { label: "Lossless / Hi-Res", value: "lossless" },
-        { label: "High", value: "high" },
-        { label: "Low", value: "low" }
-      ]
-    }
-  ]
-};
+const manifest = JSON.parse(readFileSync(new URL("./manifest.json", import.meta.url), "utf8"));
 
 const searchCache = new Map();
 const streamCache = new Map();
