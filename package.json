@@ -8,6 +8,6 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "node --check server.js && node --check src/auth.js && node --check src/normalize.js && node --check src/providers/index.js && node -e \"JSON.parse(require('node:fs').readFileSync('manifest.json', 'utf8'))\" && node --test"
+    "test": "node --check server.js && node --check src/auth.js && node --check src/normalize.js && node --check src/providers/index.js && node --check src/providers/juanjo.js && node -e \"JSON.parse(require('node:fs').readFileSync('manifest.json', 'utf8'))\" && node --test"
   }
 }
