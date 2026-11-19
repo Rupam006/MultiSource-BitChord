@@ -2,7 +2,7 @@
   "id": "dev.multisource.bitchord",
   "name": "MultiSource BitChord",
   "version": "1.1.0",
-  "description": "Aggregated music search with quality-aware provider failover.",
+  "description": "Aggregated music search with quality-aware provider failover and Stereo / Dolby Atmos preference labels.",
   "resources": ["search", "stream"],
   "bitchordAuth": true,
   "checkValidLossless": 0,
@@ -22,10 +22,10 @@
     {
       "key": "atmos",
       "type": "select",
-      "label": "Spatial audio",
+      "label": "Spatial audio (shown in quality label)",
       "default": "stereo",
       "options": [
-        { "label": "Stereo only", "value": "stereo" },
+        { "label": "Stereo", "value": "stereo" },
         { "label": "Dolby Atmos when available", "value": "auto" }
       ]
     }
