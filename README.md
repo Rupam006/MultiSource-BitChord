@@ -50,7 +50,7 @@ The community list was taken from SudinChord's community addon presets. Their UR
 | prodpwh | `PRODPWH_ADDON_URL` | Disabled until you provide your private session URL. Add it as a Render secret later; never commit it. |
 | Confih Hi-Res | `CONFIH_URL` (default preset URL) | Generic BitChord route adapter; upstream auth/availability still needs live validation. |
 | Qobuz [Heisenberg] | `HEISENBERG_URL` (default ends in `/a`) | Generic adapter; preset endpoint was previously observed unavailable and needs live validation. |
-| juanjob hi res | `JUANJOB_URL` | Not enabled as a remote proxy. Its handler uses the BitChord `/search` and `/stream/:id` routes, but its verifier is configured for the juanjob hostnames. The proof sent by BitChord to this aggregator is signed for the aggregator hostname, so forwarding it would fail upstream verification. A native integration needs the provider's router/source modules or a documented server-to-server API; the handler alone does not include those implementations. |
+| Hi-res (Qobuz / Tidal / Monochrome / Netease) | `JUANJOB_URL` (defaults to `https://hiress.onrender.com`) | Integrated through the owned Hi-res addon API. The aggregator verifies the incoming proof and forwards the same headers only to this provider. The Hi-res addon must add `multisource-bitchord-d036.onrender.com` to the `hosts` array in `api/index.js`, then be redeployed; until then its auth will reject aggregator requests. |
 
 The generic adapter does not forge device proofs or invent undocumented endpoints. An upstream that is offline, returns a different API shape, or requires unsupported authentication will be skipped rather than returning fabricated tracks.
 
@@ -61,7 +61,7 @@ The generic adapter does not forge device proofs or invent undocumented endpoint
 - `PRODPWH_ADDON_URL` — your private personalized addon URL; store only in Render environment variables.
 - `CONFIH_URL` — optional Confih addon root.
 - `HEISENBERG_URL` — optional Heisenberg addon root.
-- `JUANJOB_URL` — optional override; still disabled for server-to-server proxying until a native integration or documented API is available.
+- `JUANJOB_URL` — optional override for the owned Hi-res addon (defaults to `https://hiress.onrender.com`). The upstream BitChord auth host allowlist must include the aggregator hostname.
 
 Never commit personal provider URLs or tokens.
 
