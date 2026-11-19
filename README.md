@@ -50,7 +50,7 @@ The community list was taken from SudinChord's community addon presets. Their UR
 | prodpwh | `PRODPWH_ADDON_URL` | Disabled until you provide your private session URL. Add it as a Render secret later; never commit it. |
 | Confih Hi-Res | `CONFIH_URL` (default preset URL) | Generic BitChord route adapter; upstream auth/availability still needs live validation. |
 | Qobuz [Heisenberg] | `HEISENBERG_URL` (default ends in `/a`) | Generic adapter; preset endpoint was previously observed unavailable and needs live validation. |
-| Hi-res (Qobuz / Tidal / Monochrome / Netease) | `JUANJOB_URL` (defaults to `https://hiress.onrender.com`) | Integrated through the owned Hi-res addon API. The aggregator verifies the incoming proof and forwards the same headers only to this provider. The Hi-res addon must add `multisource-bitchord-d036.onrender.com` to the `hosts` array in `api/index.js`, then be redeployed; until then its auth will reject aggregator requests. |
+| ReZenOnance (Monochrome / Arcod) | `REZENONANCE_URL` (defaults to `https://rezenonance.onrender.com`) | Integrated through its documented `/search` and `/stream/:id` API using the existing generic provider adapter. Its upstream manifest is playback-only (`allowDownloads: 0`); live availability and stream compatibility still need validation. |
 
 The generic adapter does not forge device proofs or invent undocumented endpoints. An upstream that is offline, returns a different API shape, or requires unsupported authentication will be skipped rather than returning fabricated tracks.
 
@@ -61,7 +61,7 @@ The generic adapter does not forge device proofs or invent undocumented endpoint
 - `PRODPWH_ADDON_URL` — your private personalized addon URL; store only in Render environment variables.
 - `CONFIH_URL` — optional Confih addon root.
 - `HEISENBERG_URL` — optional Heisenberg addon root.
-- `JUANJOB_URL` — optional override for the owned Hi-res addon (defaults to `https://hiress.onrender.com`). The upstream BitChord auth host allowlist must include the aggregator hostname.
+- `REZENONANCE_URL` — optional override for the ReZenOnance addon root (defaults to `https://rezenonance.onrender.com`).
 
 Never commit personal provider URLs or tokens.
 
