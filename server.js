@@ -16,8 +16,9 @@ const manifest = {
   resources: ["search", "stream"],
   bitchordAuth: true,
   allowDownloads: 1,
-  settings: {
-    quality: {
+  settings: [
+    {
+      key: "quality",
       type: "select",
       label: "Audio quality",
       default: "lossless",
@@ -27,11 +28,13 @@ const manifest = {
         { label: "Low", value: "low" }
       ]
     }
+  ]
   }
 };
 
 const searchCache = new Map();
 const streamCache = new Map();
+const trackMetadata = new Map();
 const TTL = 5 * 60 * 1000;
 
 function json(res, status, body, extra = {}) {
@@ -70,6 +73,7 @@ async function searchAll(query, quality) {
     if (result.status !== "fulfilled") continue;
     const { provider, tracks: rows } = result.value;
     sources[provider.id] = rows.length;
+    for (const row of rows) trackMetadata.set(row.id, { title: row.title, artist: row.artist, duration: row.duration || 0 });
     tracks.push(...rows);
   }
   const combined = dedupeTracks(tracks);
@@ -83,17 +87,49 @@ async function resolveTrack(encodedId, quality) {
   const hit = cached(streamCache, cacheKey);
   if (hit) return hit;
   const preferred = findProvider(parsed.providerId);
-  const order = [preferred, ...allProviders.filter((p) => p !== preferred && p.enabled && p.baseUrl)].filter(Boolean);
-  for (const provider of order) {
-    if (!provider.enabled || !provider.baseUrl) continue;
+  if (preferred?.enabled && preferred.baseUrl) {
     try {
-      let upstreamId = parsed.upstreamId;
-      if (provider !== preferred) continue; // Cross-provider matching needs verified track metadata.
-      const stream = await provider.resolve(upstreamId, quality);
+      const stream = await preferred.resolve(parsed.upstreamId, quality);
       if (stream) return save(streamCache, cacheKey, stream);
-    } catch { /* try the next eligible source */ }
+    } catch { /* fall through to other providers */ }
+  }
+  const metadata = trackMetadata.get(encodedId);
+  if (!metadata?.title) return null;
+  const query = [metadata.artist, metadata.title].filter(Boolean).join(" ");
+  const alternatives = allProviders.filter((p) => p !== preferred && p.enabled && p.baseUrl);
+  const searches = await Promise.allSettled(alternatives.map(async (provider) => ({ provider, rows: await provider.search(query, quality) })));
+  const candidates = [];
+  for (const result of searches) {
+    if (result.status !== "fulfilled") continue;
+    for (const row of result.value.rows) {
+      const titleScore = similarity(row.title, metadata.title);
+      const artistScore = similarity(row.artist, metadata.artist);
+      const delta = metadata.duration && row.duration ? Math.abs(metadata.duration - row.duration) : 0;
+      if (titleScore < 0.92 || (metadata.artist && artistScore < 0.55) || delta > 12) continue;
+      candidates.push({ provider: result.value.provider, row, score: titleScore * 60 + artistScore * 30 - delta });
+    }
+  }
+  candidates.sort((a, b) => b.score - a.score);
+  for (const candidate of candidates) {
+    try {
+      const stream = await candidate.provider.resolve(candidate.row._upstreamId, quality);
+      if (stream) return save(streamCache, cacheKey, stream);
+    } catch { /* try the next candidate */ }
   }
   return null;
+}
+
+function similarity(a, b) {
+  const clean = (value) => String(value || "").toLowerCase().normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "").replace(/\\([^)]*\\)|\\[[^\\]]*\\]/g, " ")
+    .replace(/[^a-z0-9 ]/g, " ").replace(/\\s+/g, " ").trim();
+  const left = clean(a);
+  const right = clean(b);
+  if (!left || !right) return 0;
+  if (left === right) return 1;
+  const aWords = new Set(left.split(" "));
+  const bWords = new Set(right.split(" "));
+  return [...aWords].filter((word) => bWords.has(word)).length / Math.max(aWords.size, bWords.size);
 }
 
 const server = http.createServer(async (req, res) => {
