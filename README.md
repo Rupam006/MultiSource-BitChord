@@ -31,7 +31,7 @@ These are request preferences, not guarantees. The selected spatial-audio prefer
 - Duplicate tracks are compared using reported bit depth, sample rate, bitrate, codec and quality metadata; the highest reported resolution is kept. Missing metadata is treated as unknown, never invented.
 - When resolving playback, playable primary streams are compared first and the best reported resolution is selected. Fallback backends are searched together only if no primary stream can be resolved.
 - Provider searches run concurrently with a bounded per-provider timeout, so one offline source does not hold up every other source indefinitely.
-- Stream failover starts the preferred source and mirror discovery concurrently; eligible mirrors resolve in parallel and the first playable result wins.
+- Stream resolution compares playable candidates in the active tier and selects the highest reported resolution; the next tier is tried only when no stream in the active tier is playable.
 - Search results are cached for 3 minutes. Resolved stream URLs are cached for 45 seconds to reduce stale signed-link failures.
 - The addon returns the provider's direct HTTPS stream URL. It does not relay audio bytes, rewrite signed URLs, or proxy range requests. Playback buffering caused by a slow upstream CDN, an expiring source URL, or the listener's connection cannot be fully fixed by aggregator-side search/failover tuning.
 
