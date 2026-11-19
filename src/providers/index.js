@@ -1,13 +1,12 @@
 import { normalizeTrack } from "../normalize.js";
 import { juanjoProviders } from "./juanjo.js";
-import { rezenonanceProviders } from "./rezenonance-sources.js";
 
 const DEFAULT_TIMEOUT_MS = 6500;
 const QUALITY_LEVELS = new Set(["lossless", "high", "low"]);
 
 const definitions = [
-  { id: "prodpwh", name: "prodpwh", role: "fallback", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
-  { id: "confih", name: "Confih Hi-Res", role: "fallback", baseUrl: process.env.CONFIH_URL || "https://bitchord.confih.tech", enabled: true },
+  { id: "prodpwh", name: "prodpwh", role: "primary", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
+  { id: "confih", name: "Confih Hi-Res", role: "primary", baseUrl: process.env.CONFIH_URL || "https://bitchord.confih.tech", enabled: true },
 ];
 
 function normalizeQuality(value) {
@@ -88,7 +87,7 @@ const providers = definitions.map((definition) => ({
   }
 }));
 
-export const allProviders = [...providers, ...juanjoProviders, ...rezenonanceProviders];
+export const allProviders = [...providers, ...juanjoProviders];
 export function providerStatus() {
   return allProviders.map(({ id, name, role, enabled, baseUrl, note }) => ({
     id, name, role, enabled: Boolean(enabled && baseUrl), ...(note ? { note } : {})
