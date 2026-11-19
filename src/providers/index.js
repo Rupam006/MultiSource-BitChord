@@ -57,7 +57,7 @@ const providers = definitions.map((definition) => ({
       quality: normalizeQuality(quality),
       atmos: atmos === "auto" ? "auto" : "stereo"
     });
-    const payload = await this.request(`/stream/${encodeURIComponent(upstreamId)}?${params}`, 8500, this.id === "juanjob" ? authHeaders : {});
+    const payload = await this.request(`/stream/${encodeURIComponent(upstreamId)}?${params}`, 8500, {});
     if (!payload || typeof payload !== "object") return null;
     const streamData = payload.stream && typeof payload.stream === "object" ? payload.stream : payload;
     const url = streamData.url || streamData.streamURL || streamData.streamUrl || streamData.downloadUrl;
