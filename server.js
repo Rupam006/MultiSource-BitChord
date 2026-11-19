@@ -29,7 +29,6 @@ const manifest = {
       ]
     }
   ]
-  }
 };
 
 const searchCache = new Map();
@@ -121,8 +120,8 @@ async function resolveTrack(encodedId, quality) {
 
 function similarity(a, b) {
   const clean = (value) => String(value || "").toLowerCase().normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "").replace(/\\([^)]*\\)|\\[[^\\]]*\\]/g, " ")
-    .replace(/[^a-z0-9 ]/g, " ").replace(/\\s+/g, " ").trim();
+    .replace(/[\u0300-\u036f]/g, "").replace(/\([^)]*\)|\[[^\]]*\]/g, " ")
+    .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
   const left = clean(a);
   const right = clean(b);
   if (!left || !right) return 0;
