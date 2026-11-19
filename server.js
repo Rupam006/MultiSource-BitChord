@@ -73,26 +73,9 @@ async function searchAll(query, quality, atmos, authHeaders) {
   const hit = cached(searchCache, key);
   if (hit) return hit;
 
-  const primaryProviders = allProviders.filter((provider) => provider.role === "primary");
-  const fallbackProviders = allProviders.filter((provider) => provider.role !== "primary");
-  const primary = await searchProviderSet(primaryProviders, query, quality, atmos, authHeaders);
-
-  // ReZenOnance and the Juanjo family are primary groups and search concurrently.
-  // Enter fallback mode if no primary returns a match or either primary group is unreachable.
-  // Keep partial primary results and compare them with prodpwh and Confih when triggered.
-  const rezenonanceConnected = [...primary.successfulIds].some((id) => id.startsWith("rz-"));
-  const juanjoConnected = [...primary.successfulIds].some((id) => id.startsWith("juanjo-"));
-  const shouldSearchFallback = primary.tracks.length === 0 || !rezenonanceConnected || !juanjoConnected;
-
-  let tracks = [...primary.tracks];
-  const sources = { ...primary.sources };
-  if (shouldSearchFallback) {
-    const fallback = await searchProviderSet(fallbackProviders, query, quality, atmos, authHeaders);
-    tracks.push(...fallback.tracks);
-    Object.assign(sources, fallback.sources);
-  }
-
-  for (const row of tracks) {
+  // Every configured provider is queried concurrently; there is no fallback tier.
+  const result = await searchProviderSet(allProviders, query, quality, atmos, authHeaders);
+  for (const row of result.tracks) {
     trackMetadata.set(row.id, {
       title: row.title, artist: row.artist, duration: row.duration || 0,
       sampleRate: row.sampleRate, bitDepth: row.bitDepth, bitrate: row.bitrate,
@@ -100,11 +83,10 @@ async function searchAll(query, quality, atmos, authHeaders) {
       _providerId: row._providerId, _upstreamId: row._upstreamId
     });
   }
-  const combined = dedupeTracks(tracks);
   return save(searchCache, key, {
-    tracks: combined,
-    sources,
-    searchMode: shouldSearchFallback ? "primary+fallback" : "primary"
+    tracks: dedupeTracks(result.tracks),
+    sources: result.sources,
+    searchMode: "all-providers"
   }, SEARCH_TTL);
 }
 
@@ -168,41 +150,19 @@ async function resolveTrack(encodedId, quality, atmos, authHeaders) {
         .catch(() => null)
     : Promise.resolve(null);
 
-  // Compare every reachable primary stream before falling back. If the selected
-  // primary cannot resolve, its primary peers are searched together; only when no
-  // primary stream is playable do we fan out to all fallback backends.
-  let primaryPeers = [];
-  let fallbackStreams = [];
+  // Try the selected provider and all other providers concurrently, then prefer
+  // the highest reported audio resolution among valid matching streams.
+  let peerStreams = [];
   if (metadata?.title) {
     const query = [metadata.artist, metadata.title].filter(Boolean).join(" ");
-    if (preferred?.role === "primary") {
-      primaryPeers = await resolveMirrorTier(
-        allProviders.filter((provider) => provider.role === "primary" && provider !== preferred),
-        metadata, query, quality, atmos, authHeaders
-      );
-    } else {
-      fallbackStreams = await resolveMirrorTier(
-        allProviders.filter((provider) => provider.role !== "primary" && provider !== preferred),
-        metadata, query, quality, atmos, authHeaders
-      );
-    }
-  }
-
-  const preferredResult = await preferredAttempt;
-  let candidates = [...primaryPeers, ...(preferredResult ? [preferredResult] : [])];
-  if (candidates.length) {
-    candidates.sort((a, b) => b.score - a.score || b.matchScore - a.matchScore);
-    return save(streamCache, cacheKey, candidates[0].stream, STREAM_TTL);
-  }
-
-  if (preferred?.role === "primary" && metadata?.title) {
-    const query = [metadata.artist, metadata.title].filter(Boolean).join(" ");
-    fallbackStreams = await resolveMirrorTier(
-      allProviders.filter((provider) => provider.role !== "primary"),
+    peerStreams = await resolveMirrorTier(
+      allProviders.filter((provider) => provider !== preferred),
       metadata, query, quality, atmos, authHeaders
     );
   }
-  candidates = [...fallbackStreams, ...(preferredResult ? [preferredResult] : [])];
+
+  const preferredResult = await preferredAttempt;
+  const candidates = [...peerStreams, ...(preferredResult ? [preferredResult] : [])];
   if (!candidates.length) return null;
   candidates.sort((a, b) => b.score - a.score || b.matchScore - a.matchScore);
   return save(streamCache, cacheKey, candidates[0].stream, STREAM_TTL);
