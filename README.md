@@ -46,7 +46,6 @@ Most community sources originate from SudinChord's addon presets; ReZenOnance is
 
 | Provider | Default / configuration | Integration status |
 |---|---|---|
-| PencariMusic | `PENCARIMUSIC_URL` (default preset URL) | Generic BitChord `/search` and `/stream/:id` adapter; upstream response compatibility still needs live validation. |
 | prodpwh | `PRODPWH_ADDON_URL` | Disabled until you provide your private session URL. Add it as a Render secret later; never commit it. |
 | Confih Hi-Res | `CONFIH_URL` (default preset URL) | Generic BitChord route adapter; upstream auth/availability still needs live validation. |
 | Qobuz [Heisenberg] | `HEISENBERG_URL` (default ends in `/a`) | Generic adapter; preset endpoint was previously observed unavailable and needs live validation. |
@@ -57,7 +56,6 @@ The generic adapter does not forge device proofs or invent undocumented endpoint
 ## Environment variables
 
 - `BITCHORD_HOSTS` — comma-separated service hostnames, required if Render's hostname variable is not available.
-- `PENCARIMUSIC_URL` — optional PencariMusic addon root.
 - `PRODPWH_ADDON_URL` — your private personalized addon URL; store only in Render environment variables.
 - `CONFIH_URL` — optional Confih addon root.
 - `HEISENBERG_URL` — optional Heisenberg addon root.
