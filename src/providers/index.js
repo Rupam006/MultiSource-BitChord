@@ -10,7 +10,7 @@ const definitions = [
 
 const providers = definitions.map((definition) => ({
   ...definition,
-  baseUrl: definition.baseUrl.replace(/\/+$/, ""),
+  baseUrl: definition.baseUrl.replace(/\/manifest\.json$/i, "").replace(/\/+$/, ""),
   async request(path, timeoutMs = 9000) {
     if (!this.enabled || !this.baseUrl) throw new Error("provider is not configured");
     const controller = new AbortController();
