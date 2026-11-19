@@ -1,4 +1,5 @@
 import { normalizeTrack } from "../normalize.js";
+import { juanjoProviders } from "./juanjo.js";
 
 const DEFAULT_TIMEOUT_MS = 6500;
 const QUALITY_LEVELS = new Set(["lossless", "high", "low"]);
@@ -88,10 +89,10 @@ const providers = definitions.map((definition) => ({
   }
 }));
 
-export const allProviders = providers;
+export const allProviders = [...providers, ...juanjoProviders];
 export function providerStatus() {
-  return providers.map(({ id, name, enabled, baseUrl, note }) => ({
+  return allProviders.map(({ id, name, enabled, baseUrl, note }) => ({
     id, name, enabled: Boolean(enabled && baseUrl), ...(note ? { note } : {})
   }));
 }
-export function findProvider(id) { return providers.find((provider) => provider.id === id); }
+export function findProvider(id) { return allProviders.find((provider) => provider.id === id); }
