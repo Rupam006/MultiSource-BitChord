@@ -13,8 +13,8 @@ export function normalizeTrack(track, providerId) {
     album: String(track.album ?? ""),
     ...(Number.isFinite(duration) && duration > 0 ? { duration: duration > 3600 ? Math.round(duration / 1000) : duration } : {}),
     ...(track.artworkURL || track.artwork || track.cover ? { artworkURL: track.artworkURL || track.artwork || track.cover } : {}),
-    format: String(track.format || track.codec || "flac").toLowerCase(),
-    audioQuality: track.audioQuality || track.quality || "LOSSLESS",
+    format: String(track.format || track.codec || "unknown").toLowerCase(),
+    audioQuality: track.audioQuality || track.quality || (String(track.format || track.codec || "").toLowerCase() === "flac" ? "LOSSLESS" : "UNKNOWN"),
     source: track.source || providerId,
     _providerId: providerId,
     _upstreamId: rawId
