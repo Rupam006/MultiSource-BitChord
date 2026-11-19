@@ -3,11 +3,13 @@ export function normalizeTrack(track, providerId) {
   const rawId = String(track.id ?? track.trackId ?? "");
   if (!rawId) return null;
   const id = Buffer.from(rawId).toString("base64url");
-  const duration = Number(track.duration ?? track.durationSeconds ?? 0);
+  const artistValue = track.artist ?? track.artists ?? "";
+  const artist = Array.isArray(artistValue) ? artistValue.map((item) => typeof item === "string" ? item : item?.name).filter(Boolean).join(", ") : String(artistValue);
+  const duration = Number(track.duration ?? track.durationSeconds ?? (Number(track.durationMs) ? Number(track.durationMs) / 1000 : 0));
   return {
     id: `${providerId}:${id}`,
     title: String(track.title),
-    artist: String(track.artist ?? track.artists ?? ""),
+    artist,
     album: String(track.album ?? ""),
     ...(Number.isFinite(duration) && duration > 0 ? { duration: duration > 3600 ? Math.round(duration / 1000) : duration } : {}),
     ...(track.artworkURL || track.artwork || track.cover ? { artworkURL: track.artworkURL || track.artwork || track.cover } : {}),
