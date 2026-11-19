@@ -42,7 +42,7 @@ These are request preferences, not guarantees. The actual codec, bit depth, samp
 
 ## Provider configuration and status
 
-The community list was taken from SudinChord's community addon presets. Their URLs do not all represent public, anonymous, stable APIs.
+Most community sources originate from SudinChord's addon presets; ReZenOnance is an additional independent upstream. These URLs do not all represent public, anonymous, stable APIs.
 
 | Provider | Default / configuration | Integration status |
 |---|---|---|
