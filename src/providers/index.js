@@ -50,7 +50,7 @@ const providers = definitions.map((definition) => ({
       ? payload
       : (payload?.tracks || payload?.results || payload?.data?.tracks || payload?.data || []);
     const rows = Array.isArray(candidateRows) ? candidateRows : [];
-    return rows.map((row) => normalizeTrack(row, this.id, normalizeQuality(quality))).filter(Boolean);
+    return rows.map((row) => normalizeTrack(row, this.id, normalizeQuality(quality), atmos)).filter(Boolean);
   },
   async resolve(upstreamId, quality, atmos = "stereo", authHeaders = {}) {
     const params = new URLSearchParams({
@@ -70,7 +70,8 @@ const providers = definitions.map((definition) => ({
       : undefined;
     return {
       url,
-      qualityTier: qualityLabel(quality),
+      qualityTier: `${qualityLabel(quality)} · ${atmos === "auto" ? "Dolby Atmos (when available)" : "Stereo"}`,
+      spatialAudioPreference: atmos === "auto" ? "Dolby Atmos (when available)" : "Stereo",
       ...(resolution ? { resolution } : {}),
       codec: streamData.codec || streamData.format || "unknown",
       container: streamData.container || streamData.format || "unknown",
@@ -82,6 +83,7 @@ const providers = definitions.map((definition) => ({
       ...(streamData.quality || streamData.audioQuality ? { quality: streamData.quality || streamData.audioQuality } : {}),
       ...(streamData.codec || streamData.format ? { format: String(streamData.codec || streamData.format).toLowerCase() } : {}),
       ...(streamData.atmos ? { atmos: streamData.atmos } : {}),
+      ...(streamData.spatialAudio || streamData.spatial_audio ? { spatialAudio: streamData.spatialAudio || streamData.spatial_audio } : {}),
       provider: this.name
     };
   }
