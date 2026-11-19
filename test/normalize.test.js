@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizeTrack, dedupeTracks, unpackTrackId } from "../src/normalize.js";
+import { audioResolutionScore, normalizeTrack, dedupeTracks, unpackTrackId } from "../src/normalize.js";
 
 test("normalizes provider track ids and metadata", () => {
   const row = normalizeTrack({ id: "track/42", title: "Signal", artist: [{ name: "Artist A" }, { name: "Artist B" }], durationMs: 183000 }, "demo");
@@ -48,4 +48,20 @@ test("deduplicates equivalent title, artist and duration", () => {
   assert.equal(result.length, 1);
   assert.equal(result[0].id, rows[0].id);
   assert.equal("_upstreamId" in result[0], false);
+});
+
+
+test("deduplication keeps the highest reported audio resolution", () => {
+  const standard = normalizeTrack({
+    id: "standard", title: "Same Song", artist: "Same Artist", duration: 180,
+    format: "flac", sampleRate: 44100, bitDepth: 16, audioQuality: "LOSSLESS"
+  }, "prodpwh");
+  const hires = normalizeTrack({
+    id: "hires", title: "Same Song", artist: "Same Artist", duration: 180,
+    format: "flac", sampleRate: 192000, bitDepth: 24, audioQuality: "HI_RES_LOSSLESS"
+  }, "juanjo-mono");
+  assert.ok(audioResolutionScore(hires) > audioResolutionScore(standard));
+  const result = dedupeTracks([standard, hires]);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, hires.id);
 });
