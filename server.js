@@ -77,13 +77,12 @@ async function searchAll(query, quality, atmos, authHeaders) {
   const fallbackProviders = allProviders.filter((provider) => provider.role !== "primary");
   const primary = await searchProviderSet(primaryProviders, query, quality, atmos, authHeaders);
 
-  // prodpwh, Confih, and the Juanjo family are primary groups and search concurrently.
-  // Enter fallback mode if no primary returns a match or any primary group is unreachable.
-  // Keep partial primary results and compare them with all fallback results when triggered.
-  const prodpwhConnected = primary.successfulIds.has("prodpwh");
-  const confihConnected = primary.successfulIds.has("confih");
+  // ReZenOnance and the Juanjo family are primary groups and search concurrently.
+  // Enter fallback mode if no primary returns a match or either primary group is unreachable.
+  // Keep partial primary results and compare them with prodpwh and Confih when triggered.
+  const rezenonanceConnected = [...primary.successfulIds].some((id) => id.startsWith("rz-"));
   const juanjoConnected = [...primary.successfulIds].some((id) => id.startsWith("juanjo-"));
-  const shouldSearchFallback = primary.tracks.length === 0 || !prodpwhConnected || !confihConnected || !juanjoConnected;
+  const shouldSearchFallback = primary.tracks.length === 0 || !rezenonanceConnected || !juanjoConnected;
 
   let tracks = [...primary.tracks];
   const sources = { ...primary.sources };
