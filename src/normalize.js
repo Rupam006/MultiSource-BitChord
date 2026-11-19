@@ -4,7 +4,7 @@ const QUALITY_LABELS = {
   low: "Data saver"
 };
 
-export function normalizeTrack(track, providerId) {
+export function normalizeTrack(track, providerId, requestedQuality = "lossless") {
   if (!track || typeof track !== "object" || !track.title) return null;
   const rawId = String(track.id ?? track.trackId ?? "");
   if (!rawId) return null;
@@ -19,7 +19,7 @@ export function normalizeTrack(track, providerId) {
   const bitrate = Number(track.bitrate);
   const format = String(track.format || track.codec || "unknown").toLowerCase();
   const quality = String(track.audioQuality || track.quality || (format === "flac" ? "LOSSLESS" : "UNKNOWN")).toUpperCase();
-  const qualityTier = String(track.qualityTier || track.requestedQuality || "lossless").toLowerCase();
+  const qualityTier = String(track.qualityTier || track.requestedQuality || requestedQuality || "lossless").toLowerCase();
   const resolution = Number.isFinite(bitDepth) && bitDepth > 0 && Number.isFinite(sampleRate) && sampleRate > 0
     ? `${bitDepth}-bit / ${(sampleRate / 1000).toFixed(sampleRate % 1000 === 0 ? 0 : 1)} kHz`
     : undefined;
