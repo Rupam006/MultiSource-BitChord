@@ -26,11 +26,13 @@ const providers = definitions.map((definition) => ({
   },
   async search(query, quality) {
     const payload = await this.request(`/search?q=${encodeURIComponent(query)}&quality=${encodeURIComponent(quality || "lossless")}`);
-    const rows = Array.isArray(payload) ? payload : (payload.tracks || payload.results || payload.data || []);
+    const candidateRows = Array.isArray(payload) ? payload : (payload?.tracks || payload?.results || payload?.data || []);
+    const rows = Array.isArray(candidateRows) ? candidateRows : [];
     return rows.map((row) => normalizeTrack(row, this.id)).filter(Boolean);
   },
   async resolve(upstreamId, quality) {
     const payload = await this.request(`/stream/${encodeURIComponent(upstreamId)}?quality=${encodeURIComponent(quality || "lossless")}`, 12000);
+    if (!payload || typeof payload !== "object") return null;
     const url = payload.url || payload.streamURL || payload.streamUrl;
     if (!url || !/^https:\/\//i.test(url) || payload.encrypted === true) return null;
     return {
