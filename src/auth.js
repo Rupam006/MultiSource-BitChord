@@ -57,8 +57,9 @@ export function createBitChordAuth({ hosts, fetchImpl = fetch, now = Date.now } 
   }
 
   async function verify(headers) {
-    const token = headers.get("x-bitchord-token");
-    const proof = headers.get("x-bitchord-proof");
+    const getHeader = (name) => typeof headers?.get === "function" ? headers.get(name) : headers?.[name] ?? headers?.[name.toLowerCase()];
+    const token = getHeader("x-bitchord-token");
+    const proof = getHeader("x-bitchord-proof");
     if (!token || !proof) return reject(401, "missing", "This addon only accepts requests from the official BitChord app");
 
     try {
