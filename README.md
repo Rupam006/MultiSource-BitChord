@@ -23,7 +23,7 @@ The manifest exposes the quality modes supported by the supplied community addon
 | Stereo only | `stereo` | Atmos disabled |
 | Dolby Atmos when available | `auto` | Atmos requested where upstream supports it |
 
-These are request preferences, not guarantees. The actual codec, bit depth, sample rate and bitrate are included in normalized track/stream metadata only when the provider returns those values. The addon does not label an unknown stream as FLAC or lossless.
+These are request preferences, not guarantees. The selected spatial-audio preference is also appended to the returned `qualityTier` label (for example, `Lossless / Hi-Res · Stereo` or `Lossless / Hi-Res · Dolby Atmos (when available)`). The addon reports detected `spatialAudio: Dolby Atmos` or `spatialAudio: Stereo` only when upstream metadata explicitly confirms it; selecting Atmos does not prove the provider returned an Atmos stream. The actual codec, bit depth, sample rate and bitrate are included in normalized track/stream metadata only when the provider returns those values. The addon does not label an unknown stream as FLAC or lossless.
 
 ## Performance and buffering
 
