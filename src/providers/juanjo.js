@@ -206,7 +206,7 @@ async function deezerSearch(query) {
 
 function provider(id, name, searchFn, resolveFn) {
   return {
-    id, name, enabled: true, baseUrl: "direct-upstream",
+    id, name, role: "primary", enabled: true, baseUrl: "direct-upstream",
     async search(query, quality, atmos) {
       const rows = await searchFn(String(query || "").trim());
       return rows.map((row) => normalizeTrack(row, id, quality, atmos)).filter(Boolean);
