@@ -15,24 +15,23 @@ Primary providers are searched together:
 
 | Provider | Source |
 |---|---|
-| prodpwh | Private BitChord addon; configured separately |
-| Confih Hi-Res | Confih BitChord addon |
-| Juanjo Monochrome / Tidal | Monochrome catalogue and stream source |
-| Juanjo Qobuz | Qobuz search and stream source |
-| Juanjo Netease | Netease catalogue/stream bridge |
-| Juanjo Deezer | Deezer catalogue source; playback may resolve through another provider |
-
-Fallback providers are searched together when the primary tier returns no usable matches or a primary provider group is unreachable:
-
-| Provider | Source |
-|---|---|
-| Qobuz [Heisenberg] | Heisenberg BitChord addon |
 | ReZenOnance · Monochrome | Monochrome FLAC source |
 | ReZenOnance · Arcod | Arcod / Instable source |
 | ReZenOnance · Qobuz-DL | Qobuz-DL-compatible API |
 | ReZenOnance · LastBabe | LastBabe source |
 | ReZenOnance · Deezer | Deezer-compatible remote addon |
 | ReZenOnance · Eljohnzc | Eljohnzc remote addon |
+| Juanjo Monochrome / Tidal | Monochrome catalogue and stream source |
+| Juanjo Qobuz | Qobuz search and stream source |
+| Juanjo Netease | Netease catalogue/stream bridge |
+| Juanjo Deezer | Deezer catalogue source; playback may resolve through another provider |
+
+Fallback providers are searched when no primary matches are found or a primary provider group is unreachable:
+
+| Provider | Source |
+|---|---|
+| prodpwh | Private BitChord addon; configured separately |
+| Confih Hi-Res | Confih BitChord addon |
 
 The ReZenOnance project is integrated as its individual provider sources rather than queried as one separate ReZenOnance addon. Provider endpoints are external dependencies and may change, rate-limit requests, or become unavailable. The presence of an adapter is not a guarantee of current upstream availability. The ReZenOnance provider adapters are adapted from [KATx-dev/ReZenOnance](https://github.com/KATx-dev/ReZenOnance), licensed under GPL-3.0-or-later; the license text is included at LICENSES/ReZenOnance-GPL-3.0.txt.
 
