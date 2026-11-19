@@ -27,7 +27,7 @@ These are request preferences, not guarantees. The selected spatial-audio prefer
 
 ## Performance and buffering
 
-- prodpwh and all Juanjo provider adapters are the primary tier and start searching concurrently. If no primary match is returned, or either primary group is unreachable, every fallback provider is searched concurrently.
+- prodpwh, Confih, and all Juanjo provider adapters are the primary tier and start searching concurrently. If no primary match is returned, or either primary group is unreachable, every fallback provider is searched concurrently.
 - Duplicate tracks are compared using reported bit depth, sample rate, bitrate, codec and quality metadata; the highest reported resolution is kept. Missing metadata is treated as unknown, never invented.
 - When resolving playback, playable primary streams are compared first and the best reported resolution is selected. Fallback backends are searched together only if no primary stream can be resolved.
 - Provider searches run concurrently with a bounded per-provider timeout, so one offline source does not hold up every other source indefinitely.
@@ -50,7 +50,7 @@ The Juanjo Hi-Res repository is integrated as direct upstream adapters rather th
 | Tier | Provider | Default / configuration | Integration status |
 |---|---|---|
 | Primary | prodpwh | `PRODPWH_ADDON_URL` | Private personalized addon; enabled only when configured. Keep its URL in Render environment variables, never in Git. |
-| Fallback | Confih Hi-Res | `CONFIH_URL` (default preset URL) | Generic BitChord route adapter; upstream auth/availability still needs live validation. |
+| Primary | Confih Hi-Res | `CONFIH_URL` (default preset URL) | Generic BitChord route adapter; upstream auth/availability still needs live validation. |
 | Fallback | Qobuz [Heisenberg] | `HEISENBERG_URL` (default ends in `/a`) | Generic adapter; preset endpoint was previously observed unavailable and needs live validation. |
 | Fallback | ReZenOnance (Monochrome / Arcod) | `REZENONANCE_URL` (defaults to `https://rezenonance.onrender.com`) | Existing generic adapter; retained as a separate upstream. |
 | Primary (Juanjo) | Monochrome / Tidal | Monochrome instance registry and `tracks.monochrome.st` | Direct search and FLAC stream probing. Tidal uses the same Monochrome index here, so it is represented as one source rather than duplicate search requests. |
