@@ -22,7 +22,7 @@ async function requestJson(url) {
 
 function mapTrack(item) {
   const id = String(item?.trackId ?? item?.id ?? "");
-  if (!/^\\d+$/.test(id) || !item?.title) return null;
+  if (!/^\d+$/.test(id) || !item?.title) return null;
   const artist = Array.isArray(item.artistNames)
     ? item.artistNames.join(", ")
     : Array.isArray(item.artists)
@@ -34,7 +34,7 @@ function mapTrack(item) {
     title: item.title,
     artist,
     album: item.albumTitle || item.releaseTitle || item.album?.title || "",
-    duration: rawDuration > 3600 ? Math.round(rawDuration / 1000) : rawDuration || undefined,
+    duration: rawDuration > 1000 ? Math.round(rawDuration / 1000) : rawDuration || undefined,
     artworkURL: item.artwork || item.cover || item.album?.cover || undefined,
     format: "flac",
     audioQuality: "LOSSLESS"
@@ -91,7 +91,7 @@ async function probeFlac(url) {
 }
 
 async function resolve(id) {
-  if (!/^\\d+$/.test(String(id))) return null;
+  if (!/^\d+$/.test(String(id))) return null;
   return probeFlac(`${BASE_URL}/track/${encodeURIComponent(id)}`);
 }
 
