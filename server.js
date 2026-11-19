@@ -23,10 +23,10 @@ function json(res, status, body, extra = {}) {
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET, OPTIONS",
     "access-control-allow-headers": "X-BitChord-Token, X-BitChord-Proof, Content-Type",
-    "access-control-expose-headers": "WWW-Authenticate",
+    "access-control-expose-headers": "WWW-Authenticate, X-Addon-Sources",
     ...extra
   });
-  res.end(JSON.stringify(body));
+  res.end(JSON.stringify(body, null, 2));
 }
 function cached(map, key) {
   const item = map.get(key);
@@ -238,7 +238,15 @@ const server = http.createServer(async (req, res) => {
     "X-BitChord-Token": req.headers["x-bitchord-token"],
     "X-BitChord-Proof": req.headers["x-bitchord-proof"]
   };
-  if (path === "/health") return json(res, 200, { ok: true, providers: providerStatus() });
+  if (path === "/health") {
+    const providers = providerStatus();
+    return json(res, 200, {
+      ok: true,
+      node: process.version,
+      audioSources: providers.filter((provider) => provider.enabled && !provider.id.includes("deezer")).map((provider) => provider.name),
+      providers
+    });
+  }
   if (path === "/search") {
     const query = (url.searchParams.get("q") || "").trim();
     if (!query) return json(res, 200, { tracks: [] });
@@ -246,7 +254,7 @@ const server = http.createServer(async (req, res) => {
       const quality = cleanQuality(url.searchParams.get("quality"));
       const atmos = cleanAtmos(url.searchParams.get("atmos"));
       const result = await searchAll(query, quality, atmos, upstreamAuth);
-      return json(res, 200, { tracks: result.tracks });
+      return json(res, 200, { tracks: result.tracks }, { "X-Addon-Sources": encodeURIComponent(JSON.stringify(result.sources)) });
     } catch (error) {
       return json(res, 502, { error: "search_failed", message: String(error.message || error), tracks: [] });
     }
