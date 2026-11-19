@@ -15,7 +15,7 @@ All routes except the manifest require the official BitChord hardware-backed req
 
 1. Create a Render Web Service from this repository.
 2. Runtime: Node; build command: `npm install`; start command: `npm start`.
-3. After Render assigns the service hostname, set `BITCHORD_HOSTS` to that hostname (and any custom domain).
+3. Render's `RENDER_EXTERNAL_HOSTNAME` is used automatically for BitChord proof checks. Set `BITCHORD_HOSTS` only if you add a custom domain or need multiple hostnames.
 4. Add any provider-specific environment variables below.
 5. Deploy, then add the HTTPS service URL in the official BitChord Android app.
 
