@@ -106,7 +106,7 @@ The hostname used for BitChord proof validation must match the public hostname u
 - External provider APIs can change independently; verify search and playback after changing provider endpoints.
 - Search and stream responses are cached briefly to reduce repeated upstream requests.
 - The addon returns provider stream URLs directly; playback speed and buffering also depend on the upstream host, stream URL lifetime, network and player.
-- Downloads are not provided. The addon is intended for search and streaming playback.
+- The manifest currently enables downloads with allowDownloads: 1. Actual download support still depends on the selected provider returning a compatible, accessible media URL.
 
 ## Related source
 
