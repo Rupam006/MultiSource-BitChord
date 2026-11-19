@@ -98,7 +98,7 @@ export function createBitChordAuth({ hosts, fetchImpl = fetch, now = Date.now } 
       const signature = decode64url(match[2]);
       let valid = false;
       for (const hostname of allowedHosts) {
-        const message = enc.encode(`${PROOF_CONTEXT}\\n${hostname}\\n${match[1]}\\n${tokenHash}`);
+        const message = enc.encode(`${PROOF_CONTEXT}\n${hostname}\n${match[1]}\n${tokenHash}`);
         if (await subtle.verify({ name: "ECDSA", hash: "SHA-256" }, deviceKey, signature, message)) {
           valid = true;
           break;
