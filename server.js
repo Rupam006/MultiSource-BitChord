@@ -47,7 +47,7 @@ function cleanAtmos(value) {
   return value === "auto" ? "auto" : "stereo";
 }
 
-async function searchAll(query, quality, atmos) {
+async function searchAll(query, quality, atmos, authHeaders) {
   const key = `${quality}:${atmos}:${query.toLowerCase()}`;
   const hit = cached(searchCache, key);
   if (hit) return hit;
@@ -55,7 +55,7 @@ async function searchAll(query, quality, atmos) {
   // Providers are queried concurrently; a slow/offline source cannot block the others.
   const settled = await Promise.allSettled(
     allProviders.filter((provider) => provider.enabled && provider.baseUrl)
-      .map(async (provider) => ({ provider, tracks: await provider.search(query, quality, atmos) }))
+      .map(async (provider) => ({ provider, tracks: await provider.search(query, quality, atmos, authHeaders) }))
   );
   const tracks = [];
   const sources = {};
@@ -74,7 +74,7 @@ async function searchAll(query, quality, atmos) {
   return save(searchCache, key, { tracks: combined, sources }, SEARCH_TTL);
 }
 
-async function resolveTrack(encodedId, quality, atmos) {
+async function resolveTrack(encodedId, quality, atmos, authHeaders) {
   const parsed = unpackTrackId(encodedId);
   if (!parsed) return null;
   const cacheKey = `${encodedId}:${quality}:${atmos}`;
@@ -83,7 +83,7 @@ async function resolveTrack(encodedId, quality, atmos) {
 
   const preferred = findProvider(parsed.providerId);
   const preferredAttempt = preferred?.enabled && preferred.baseUrl
-    ? preferred.resolve(parsed.upstreamId, quality, atmos).then((stream) => {
+    ? preferred.resolve(parsed.upstreamId, quality, atmos, authHeaders).then((stream) => {
         if (!stream) throw new Error("preferred source returned no playable stream");
         return stream;
       })
@@ -102,7 +102,7 @@ async function resolveTrack(encodedId, quality, atmos) {
     const searches = await Promise.allSettled(
       alternatives.map(async (provider) => ({
         provider,
-        rows: await provider.search(query, quality, atmos)
+        rows: await provider.search(query, quality, atmos, authHeaders)
       }))
     );
     const candidates = [];
@@ -124,7 +124,7 @@ async function resolveTrack(encodedId, quality, atmos) {
     }
     candidates.sort((a, b) => b.score - a.score);
     const attempts = candidates.slice(0, 6).map(async (candidate) => {
-      const stream = await candidate.provider.resolve(candidate.row._upstreamId, quality, atmos);
+      const stream = await candidate.provider.resolve(candidate.row._upstreamId, quality, atmos, authHeaders);
       if (!stream) throw new Error("mirror returned no playable stream");
       return stream;
     });
@@ -165,6 +165,10 @@ const server = http.createServer(async (req, res) => {
     const refusal = auth.refusal(verified);
     return json(res, refusal.status, await refusal.json(), Object.fromEntries(refusal.headers));
   }
+  const upstreamAuth = {
+    "X-BitChord-Token": req.headers["x-bitchord-token"],
+    "X-BitChord-Proof": req.headers["x-bitchord-proof"]
+  };
   if (path === "/health") return json(res, 200, { ok: true, providers: providerStatus() });
   if (path === "/search") {
     const query = (url.searchParams.get("q") || "").trim();
@@ -172,7 +176,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const quality = cleanQuality(url.searchParams.get("quality"));
       const atmos = cleanAtmos(url.searchParams.get("atmos"));
-      const result = await searchAll(query, quality, atmos);
+      const result = await searchAll(query, quality, atmos, upstreamAuth);
       return json(res, 200, { tracks: result.tracks });
     } catch (error) {
       return json(res, 502, { error: "search_failed", message: String(error.message || error), tracks: [] });
@@ -182,7 +186,7 @@ const server = http.createServer(async (req, res) => {
     const id = decodeURIComponent(path.slice("/stream/".length));
     const quality = cleanQuality(url.searchParams.get("quality"));
     const atmos = cleanAtmos(url.searchParams.get("atmos"));
-    const stream = await resolveTrack(id, quality, atmos);
+    const stream = await resolveTrack(id, quality, atmos, upstreamAuth);
     return stream ? json(res, 200, stream) : json(res, 404, { error: "stream_not_found" });
   }
   return json(res, 404, { error: "not_found" });
