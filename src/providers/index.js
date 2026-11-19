@@ -4,7 +4,6 @@ const DEFAULT_TIMEOUT_MS = 6500;
 const QUALITY_LEVELS = new Set(["lossless", "high", "low"]);
 
 const definitions = [
-  { id: "pencarimusic", name: "PencariMusic", baseUrl: process.env.PENCARIMUSIC_URL || "https://stream.pencarimovie.com/66ff097863dedb7ccd8401d5ffe616f3/music", enabled: true },
   { id: "prodpwh", name: "prodpwh", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
   { id: "confih", name: "Confih Hi-Res", baseUrl: process.env.CONFIH_URL || "https://bitchord.confih.tech", enabled: true },
   { id: "heisenberg", name: "Qobuz [Heisenberg]", baseUrl: process.env.HEISENBERG_URL || "https://heisenbergbackaaahh.de.deplexo.com/a", enabled: true },
