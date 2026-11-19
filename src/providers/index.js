@@ -37,8 +37,8 @@ const providers = definitions.map((definition) => ({
     if (!url || !/^https:\/\//i.test(url) || payload.encrypted === true) return null;
     return {
       url,
-      codec: payload.codec || payload.format || "flac",
-      container: payload.container || payload.format || "flac",
+      codec: payload.codec || payload.format || "unknown",
+      container: payload.container || payload.format || "unknown",
       manifest: payload.manifest || "none",
       encrypted: false,
       ...(payload.sampleRate ? { sampleRate: Number(payload.sampleRate) } : {}),
