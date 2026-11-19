@@ -63,10 +63,36 @@ export function normalizeTrack(track, providerId, requestedQuality = "lossless",
   };
 }
 
+export function audioResolutionScore(track = {}) {
+  const bitDepth = Number(track.bitDepth ?? track.bit_depth) || 0;
+  const sampleRate = Number(track.sampleRate ?? track.sample_rate) || 0;
+  const bitrate = Number(track.bitrate) || 0;
+  const quality = String(track.audioQuality ?? track.quality ?? track.qualityTier ?? "").toUpperCase();
+  const format = String(track.format ?? track.codec ?? track.container ?? "").toLowerCase();
+  let score = 0;
+  if (bitDepth > 0 && sampleRate > 0) {
+    score = 40_000_000_000 + bitDepth * 100_000_000 + sampleRate;
+  } else if (/HI.?RES|HIGH.?RES|MQA|DSD/.test(quality)) {
+    score = 30_000_000_000;
+  } else if (/LOSSLESS|FLAC|ALAC|WAV/.test(quality)) {
+    score = 20_000_000_000;
+  } else if (bitrate > 0) {
+    score = 10_000_000_000 + bitrate;
+  } else if (["flac", "alac", "wav", "aiff"].includes(format)) {
+    score = 5_000_000_000;
+  }
+  if (["flac", "alac", "wav", "aiff"].includes(format)) score += 100_000;
+  if (bitrate > 0) score += Math.min(bitrate, 10_000_000);
+  return score;
+}
+
 export function dedupeTracks(tracks, limit = 60) {
   const seen = new Set();
   const output = [];
-  for (const track of tracks) {
+  const ranked = tracks.map((track, index) => ({ track, index }))
+    .sort((a, b) => audioResolutionScore(b.track) - audioResolutionScore(a.track) || a.index - b.index)
+    .map(({ track }) => track);
+  for (const track of ranked) {
     const key = [track.title, track.artist, track.duration || ""].join("|")
       .toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
       .replace(/[^a-z0-9| ]/g, "").replace(/\\s+/g, " ").trim();
