@@ -27,7 +27,19 @@ test("exposes exact resolution metadata and selected quality tier", () => {
   assert.equal(row.spatialAudioPreference, "Stereo");
 });
 
-test("includes selected Dolby Atmos preference without claiming detected Atmos playback", () => {\n  const row = normalizeTrack({ id: "atmos-1", title: "Spatial Test", format: "flac" }, "demo", "lossless", "auto");\n  assert.equal(row.qualityTier, "Lossless / Hi-Res · Dolby Atmos (when available)");\n  assert.equal(row.spatialAudioPreference, "Dolby Atmos (when available)");\n  assert.equal("spatialAudio" in row, false);\n});\n\ntest("reports detected Dolby Atmos only when upstream metadata confirms it", () => {\n  const row = normalizeTrack({ id: "atmos-2", title: "Confirmed Atmos", atmos: true }, "demo");\n  assert.equal(row.spatialAudio, "Dolby Atmos");\n});\n\ntest("deduplicates equivalent title, artist and duration", () => {
+test("includes selected Dolby Atmos preference without claiming detected Atmos playback", () => {
+  const row = normalizeTrack({ id: "atmos-1", title: "Spatial Test", format: "flac" }, "demo", "lossless", "auto");
+  assert.equal(row.qualityTier, "Lossless / Hi-Res · Dolby Atmos (when available)");
+  assert.equal(row.spatialAudioPreference, "Dolby Atmos (when available)");
+  assert.equal("spatialAudio" in row, false);
+});
+
+test("reports detected Dolby Atmos only when upstream metadata confirms it", () => {
+  const row = normalizeTrack({ id: "atmos-2", title: "Confirmed Atmos", atmos: true }, "demo");
+  assert.equal(row.spatialAudio, "Dolby Atmos");
+});
+
+test("deduplicates equivalent title, artist and duration", () => {
   const rows = [
     normalizeTrack({ id: "1", title: "Song!", artist: "The Artist", duration: 180 }, "a"),
     normalizeTrack({ id: "2", title: "song", artist: "the artist", duration: 180 }, "b")
