@@ -6,6 +6,7 @@
   "resources": ["search", "stream"],
   "bitchordAuth": true,
   "allowDownloads": 1,
+  "checkValidLossless": 0,
   "settings": [
     {
       "key": "quality",
