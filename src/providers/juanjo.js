@@ -121,7 +121,25 @@ async function probeFlac(url) {
   try {
     const response = await fetch(url, { headers: { range: "bytes=0-63", "user-agent": UA }, signal: controller.signal, redirect: "follow" });
     if (!response.ok && response.status !== 206) return null;
-    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (!response.body) return null;
+    const reader = response.body.getReader();
+    const chunks = [];
+    let length = 0;
+    while (length < 64) {
+      const part = await reader.read();
+      if (part.done) break;
+      chunks.push(part.value);
+      length += part.value.length;
+    }
+    await reader.cancel().catch(() => {});
+    const bytes = new Uint8Array(Math.min(length, 64));
+    let offset = 0;
+    for (const chunk of chunks) {
+      const take = Math.min(chunk.length, bytes.length - offset);
+      if (take <= 0) break;
+      bytes.set(chunk.subarray(0, take), offset);
+      offset += take;
+    }
     if (bytes.length < 42 || String.fromCharCode(...bytes.slice(0, 4)) !== "fLaC") return null;
     const si = bytes.slice(8, 42);
     const sampleRate = (si[10] << 12) | (si[11] << 4) | (si[12] >> 4);
