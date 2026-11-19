@@ -223,7 +223,15 @@ function similarity(a, b) {
 }
 
 const server = http.createServer(async (req, res) => {
-  if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, {
+      "access-control-allow-origin": "*",
+      "access-control-allow-methods": "GET, OPTIONS",
+      "access-control-allow-headers": "X-BitChord-Token, X-BitChord-Proof, Content-Type",
+      "access-control-max-age": "86400"
+    });
+    return res.end();
+  }
   if (req.method !== "GET") return json(res, 405, { error: "method_not_allowed" }, { allow: "GET, OPTIONS" });
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const path = url.pathname.replace(/\/+$/, "") || "/";
