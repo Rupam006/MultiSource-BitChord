@@ -8,7 +8,7 @@ const definitions = [
   { id: "prodpwh", name: "prodpwh", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
   { id: "confih", name: "Confih Hi-Res", baseUrl: process.env.CONFIH_URL || "https://bitchord.confih.tech", enabled: true },
   { id: "heisenberg", name: "Qobuz [Heisenberg]", baseUrl: process.env.HEISENBERG_URL || "https://heisenbergbackaaahh.de.deplexo.com/a", enabled: true },
-  { id: "juanjob", name: "Hi-res (Qobuz / Tidal / Monochrome / Netease)", baseUrl: process.env.JUANJOB_URL || "https://hiress.onrender.com", enabled: true, note: "Forwards the verified BitChord request proof; upstream must allow the aggregator hostname." }
+  { id: "rezenonance", name: "ReZenOnance (Monochrome / Arcod)", baseUrl: process.env.REZENONANCE_URL || "https://rezenonance.onrender.com", enabled: true, note: "Uses ReZenOnance public search/stream API; upstream currently advertises playback-only support." }
 ];
 
 function normalizeQuality(value) {
@@ -45,7 +45,7 @@ const providers = definitions.map((definition) => ({
       quality: normalizeQuality(quality),
       atmos: atmos === "auto" ? "auto" : "stereo"
     });
-    const payload = await this.request(`/search?${params}`, DEFAULT_TIMEOUT_MS, this.id === "juanjob" ? authHeaders : {});
+    const payload = await this.request(`/search?${params}`, DEFAULT_TIMEOUT_MS, {});
     const candidateRows = Array.isArray(payload)
       ? payload
       : (payload?.tracks || payload?.results || payload?.data?.tracks || payload?.data || []);
