@@ -1,82 +1,114 @@
 # MultiSource BitChord
 
-An aggregate BitChord addon for Render, built with Node.js 20+.
+A multi-source BitChord music addon for searching tracks and returning playable audio streams from several independent providers. It combines high-resolution and lossless sources, compares available audio metadata, and uses fallback providers when primary sources are unavailable.
 
-## Routes
+## What it provides
 
-- `GET /manifest.json` — public manifest; declares `bitchordAuth: true` and disables the device lossless-validation gate with `checkValidLossless: 0`.
-- `GET /search?q=...` — searches primary providers first, then fans out to every fallback backend when primary matches are absent or a primary group is unreachable; results are ranked by reported audio resolution.
-- `GET /stream/:id` — resolves a selected provider track and races eligible mirror streams for the first playable result.
-- `GET /health` — authenticated provider configuration status.
+- Unified music search across multiple provider services.
+- Concurrent searches within each provider tier.
+- Duplicate-track cleanup, preferring the best reported audio resolution.
+- Playback stream resolution with provider fallback.
+- Lossless, Hi-Res, standard-quality and spatial-audio request preferences.
+- BitChord-authenticated addon endpoints and a provider health endpoint.
 
-All routes except the manifest require BitChord hardware-backed request proof. Configure the exact public hostname in `BITCHORD_HOSTS`; for Render, `RENDER_EXTERNAL_HOSTNAME` is used if the explicit variable is empty. Add custom domains as comma-separated hostnames (no scheme, port or path).
+## Providers
 
-## Audio quality settings
+Primary providers are searched together:
 
-The manifest exposes the quality modes supported by the supplied community addon contracts:
+| Provider | Source |
+|---|---|
+| prodpwh | Private BitChord addon; configured separately |
+| Confih Hi-Res | Confih BitChord addon |
+| Juanjo Monochrome / Tidal | Monochrome catalogue and stream source |
+| Juanjo Qobuz | Qobuz search and stream source |
+| Juanjo Netease | Netease catalogue/stream bridge |
+| Juanjo Deezer | Deezer catalogue source; playback may resolve through another provider |
 
-| App label | Request value | Intended ceiling (only when upstream supplies it) |
+Fallback providers are searched together when the primary tier returns no usable matches or a primary provider group is unreachable:
+
+| Provider | Source |
+|---|---|
+| Qobuz [Heisenberg] | Heisenberg BitChord addon |
+| ReZenOnance · Monochrome | Monochrome FLAC source |
+| ReZenOnance · Arcod | Arcod / Instable source |
+| ReZenOnance · Qobuz-DL | Qobuz-DL-compatible API |
+| ReZenOnance · LastBabe | LastBabe source |
+| ReZenOnance · Deezer | Deezer-compatible remote addon |
+| ReZenOnance · Eljohnzc | Eljohnzc remote addon |
+
+The ReZenOnance project is integrated as its individual provider sources rather than queried as one separate ReZenOnance addon. Provider endpoints are external dependencies and may change, rate-limit requests, or become unavailable. The presence of an adapter is not a guarantee of current upstream availability. The ReZenOnance provider adapters are adapted from [KATx-dev/ReZenOnance](https://github.com/KATx-dev/ReZenOnance), licensed under GPL-3.0-or-later.
+
+## Audio quality
+
+| App preference | Request value | Meaning |
 |---|---|---|
-| Maximum Lossless / Hi-Res | `lossless` | Up to 24-bit / 192 kHz |
-| High Lossless | `high` | Up to 24-bit / 96 kHz |
-| Low / Data saver | `low` | Reduced bandwidth |
-| Stereo only | `stereo` | Atmos disabled |
-| Dolby Atmos when available | `auto` | Atmos requested where upstream supports it |
+| Maximum Lossless / Hi-Res | lossless | Requests the provider's best lossless rendition |
+| High Lossless | high | Requests a high-quality rendition |
+| Low / Data saver | low | Requests a lower-bandwidth rendition |
+| Stereo | stereo | Requests stereo playback |
+| Dolby Atmos when available | auto | Requests Atmos where a provider supports it |
 
-These are request preferences, not guarantees. The selected spatial-audio preference is also appended to the returned `qualityTier` label (for example, `Lossless / Hi-Res · Stereo` or `Lossless / Hi-Res · Dolby Atmos (when available)`). The addon reports detected `spatialAudio: Dolby Atmos` or `spatialAudio: Stereo` only when upstream metadata explicitly confirms it; selecting Atmos does not prove the provider returned an Atmos stream. The actual codec, bit depth, sample rate and bitrate are included in normalized track/stream metadata only when the provider returns those values. The addon does not label an unknown stream as FLAC or lossless.
+Audio resolution is determined from metadata actually supplied by a provider, such as codec, bit depth, sample rate and bitrate. When duplicate versions are found, the addon prefers the highest reported resolution. A request setting is not a guarantee: the actual stream depends on the provider and the source recording. Missing metadata is treated as unknown. Dolby Atmos is reported as detected only when the upstream explicitly identifies it; selecting the Atmos preference does not guarantee an Atmos stream.
 
-## Performance and buffering
+For reference, Hi-Res audio can reach 24-bit / 192 kHz where a provider genuinely supplies it. The addon does not upsample audio or convert a lossy source into lossless audio.
 
-- prodpwh, Confih, and all Juanjo provider adapters are the primary tier and start searching concurrently. If no primary match is returned, or either primary group is unreachable, every fallback provider is searched concurrently.
-- Duplicate tracks are compared using reported bit depth, sample rate, bitrate, codec and quality metadata; the highest reported resolution is kept. Missing metadata is treated as unknown, never invented.
-- When resolving playback, playable primary streams are compared first and the best reported resolution is selected. Fallback backends are searched together only if no primary stream can be resolved.
-- Provider searches run concurrently with a bounded per-provider timeout, so one offline source does not hold up every other source indefinitely.
-- Stream resolution compares playable candidates in the active tier and selects the highest reported resolution; the next tier is tried only when no stream in the active tier is playable.
-- Search results are cached for 3 minutes. Resolved stream URLs are cached for 45 seconds to reduce stale signed-link failures.
-- The addon returns the provider's direct HTTPS stream URL. It does not relay audio bytes, rewrite signed URLs, or proxy range requests. Playback buffering caused by a slow upstream CDN, an expiring source URL, or the listener's connection cannot be fully fixed by aggregator-side search/failover tuning.
+## API endpoints
 
-## Deploy to Render
+| Method and path | Purpose |
+|---|---|
+| GET /manifest.json | Public BitChord addon manifest |
+| GET /search?q=... | Search and return normalized track results |
+| GET /stream/:id | Resolve a selected track to a playable stream |
+| GET /health | Provider configuration and availability status |
 
-1. Create a Render Web Service from this repository.
-2. Runtime: Node; build command: `npm install`; start command: `npm start`.
-3. Render's `RENDER_EXTERNAL_HOSTNAME` is used automatically for BitChord proof checks. Set `BITCHORD_HOSTS` only if you add a custom domain or need multiple hostnames.
-4. Add any provider-specific environment variables below.
-5. Deploy, then add the HTTPS service URL in the official BitChord Android app.
+The manifest enables BitChord authentication and sets checkValidLossless: 0. This disables the app-side lossless compatibility gate; it does not make an unsupported codec or stream playable. All routes except the manifest require valid BitChord hardware-backed request proof for the configured hostname.
 
-## Provider configuration and status
+## Run and deploy
 
-The Juanjo Hi-Res repository is integrated as direct upstream adapters rather than as a single addon dependency. Its own `/search` and `/stream` routes require hardware-bound BitChord proofs for its configured hostname, so this service does not proxy those protected routes.
+Requirements: Node.js 20 or newer and npm.
 
-| Tier | Provider | Default / configuration | Integration status |
-|---|---|---|
-| Primary | prodpwh | `PRODPWH_ADDON_URL` | Private personalized addon; enabled only when configured. Keep its URL in Render environment variables, never in Git. |
-| Primary | Confih Hi-Res | `CONFIH_URL` (default preset URL) | Generic BitChord route adapter; upstream auth/availability still needs live validation. |
-| Fallback | Qobuz [Heisenberg] | `HEISENBERG_URL` (default ends in `/a`) | Generic adapter; preset endpoint was previously observed unavailable and needs live validation. |
-| Fallback | ReZenOnance (Monochrome / Arcod) | `REZENONANCE_URL` (defaults to `https://rezenonance.onrender.com`) | Existing generic adapter; retained as a separate upstream. |
-| Primary (Juanjo) | Monochrome / Tidal | Monochrome instance registry and `tracks.monochrome.st` | Direct search and FLAC stream probing. Tidal uses the same Monochrome index here, so it is represented as one source rather than duplicate search requests. |
-| Primary (Juanjo) | Qobuz (Juanjo upstream) | `JUANJO_QOBUZ_UPSTREAM_URL` (public default) | Direct search/stream adapter; availability depends on the upstream service. |
-| Primary (Juanjo) | Netease | Meting public endpoint; optional `JUANJO_NETEASE_METING_URL` override | Direct catalogue lookup and redirect-to-FLAC validation. The source repository's private/tokenized bridge URL was deliberately not copied. |
-| Primary (Juanjo) | Deezer catalogue | `api.deezer.com` | Search/catalogue only; selected tracks are resolved through the aggregator's other playable providers. |
+    git clone https://github.com/Rupam006/MultiSource-BitChord.git
+    cd MultiSource-BitChord
+    npm install
+    npm test
+    npm start
 
-The direct adapters validate returned URLs and reject encrypted or unverified audio where applicable. Provider presence does not guarantee that its upstream is currently online or that every result can be streamed.
+The server listens on the port supplied through PORT (default: 10000) and binds to 0.0.0.0. It can be deployed as a standard Node.js service on any compatible hosting platform, virtual machine, or container. Set the platform's start command to npm start; no Render-specific deployment is required.
 
-## Environment variables
+For local development, set BITCHORD_HOSTS=localhost. The manifest is available at http://localhost:10000/manifest.json. Search and stream requests still require valid BitChord credentials and proof.
 
-- `BITCHORD_HOSTS` — comma-separated service hostnames, required if Render's hostname variable is not available.
-- `PRODPWH_ADDON_URL` — your private personalized addon URL; store only in Render environment variables.
-- `CONFIH_URL` — optional Confih addon root.
-- `HEISENBERG_URL` — optional Heisenberg addon root.
-- `REZENONANCE_URL` — optional override for the ReZenOnance addon root (defaults to `https://rezenonance.onrender.com`).
-- `JUANJO_QOBUZ_UPSTREAM_URL` — optional Qobuz upstream override.
-- `JUANJO_NETEASE_METING_URL` — optional Netease Meting endpoint override.
+## Configuration
 
-Never commit personal provider URLs or tokens.
+Set environment variables in the deployment environment. Do not commit private URLs, access tokens, or credentials.
 
-## Local development
+| Variable | Purpose |
+|---|---|
+| PORT | HTTP listening port |
+| BITCHORD_HOSTS | Comma-separated allowed hostnames for BitChord proof validation |
+| PRODPWH_ADDON_URL | Private prodpwh addon URL |
+| CONFIH_URL | Optional Confih addon root |
+| HEISENBERG_URL | Optional Heisenberg addon root |
+| MONOCHROME_BASE_URL | ReZenOnance Monochrome source override |
+| INSTABLE_BASE_URL | ReZenOnance Arcod source override |
+| QOBUZ_DL_BASE_URL | ReZenOnance Qobuz-DL API override |
+| LASTBABE_BASE_URL | ReZenOnance LastBabe source override |
+| DEEZER_BASE_URL | ReZenOnance Deezer-compatible addon override |
+| ELJOHNZC_BASE_URL | ReZenOnance Eljohnzc addon override |
+| JUANJO_QOBUZ_UPSTREAM_URL | Optional Juanjo Qobuz upstream override |
+| JUANJO_NETEASE_METING_URL | Optional Juanjo Netease endpoint override |
 
-```sh
-npm install
-BITCHORD_HOSTS=localhost npm start
-```
+The hostname used for BitChord proof validation must match the public hostname used by the app. On hosting platforms that provide RENDER_EXTERNAL_HOSTNAME, it is used automatically when BITCHORD_HOSTS is not set. For other platforms, configure BITCHORD_HOSTS explicitly.
 
-The manifest can be checked without authentication at `http://localhost:10000/manifest.json`. Search and stream require genuine BitChord credentials for the configured hostname; local curl requests are expected to receive 401.
+## Development notes
+
+- npm test runs JavaScript syntax checks and the automated test suite.
+- Keep provider URLs and credentials in environment variables.
+- External provider APIs can change independently; verify search and playback after changing provider endpoints.
+- Search and stream responses are cached briefly to reduce repeated upstream requests.
+- The addon returns provider stream URLs directly; playback speed and buffering also depend on the upstream host, stream URL lifetime, network and player.
+- Downloads are not provided. The addon is intended for search and streaming playback.
+
+## Related source
+
+- [ReZenOnance provider project](https://github.com/KATx-dev/ReZenOnance)
+- [Juanjo Hi-Res addon](https://github.com/juanjoblol/bitchord-hires-addon)
