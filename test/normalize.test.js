@@ -23,10 +23,11 @@ test("exposes exact resolution metadata and selected quality tier", () => {
   assert.equal(row.sampleRate, 192000);
   assert.equal(row.bitDepth, 24);
   assert.equal(row.bitrate, 9216);
-  assert.equal(row.qualityTier, "High quality");
+  assert.equal(row.qualityTier, "High quality · Stereo");
+  assert.equal(row.spatialAudioPreference, "Stereo");
 });
 
-test("deduplicates equivalent title, artist and duration", () => {
+test("includes selected Dolby Atmos preference without claiming detected Atmos playback", () => {\n  const row = normalizeTrack({ id: "atmos-1", title: "Spatial Test", format: "flac" }, "demo", "lossless", "auto");\n  assert.equal(row.qualityTier, "Lossless / Hi-Res · Dolby Atmos (when available)");\n  assert.equal(row.spatialAudioPreference, "Dolby Atmos (when available)");\n  assert.equal("spatialAudio" in row, false);\n});\n\ntest("reports detected Dolby Atmos only when upstream metadata confirms it", () => {\n  const row = normalizeTrack({ id: "atmos-2", title: "Confirmed Atmos", atmos: true }, "demo");\n  assert.equal(row.spatialAudio, "Dolby Atmos");\n});\n\ntest("deduplicates equivalent title, artist and duration", () => {
   const rows = [
     normalizeTrack({ id: "1", title: "Song!", artist: "The Artist", duration: 180 }, "a"),
     normalizeTrack({ id: "2", title: "song", artist: "the artist", duration: 180 }, "b")
