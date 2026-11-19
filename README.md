@@ -36,7 +36,7 @@ Fallback providers are searched together when the primary tier returns no usable
 | ReZenOnance · Deezer | Deezer-compatible remote addon |
 | ReZenOnance · Eljohnzc | Eljohnzc remote addon |
 
-The ReZenOnance project is integrated as its individual provider sources rather than queried as one separate ReZenOnance addon. Provider endpoints are external dependencies and may change, rate-limit requests, or become unavailable. The presence of an adapter is not a guarantee of current upstream availability. The ReZenOnance provider adapters are adapted from [KATx-dev/ReZenOnance](https://github.com/KATx-dev/ReZenOnance), licensed under GPL-3.0-or-later.
+The ReZenOnance project is integrated as its individual provider sources rather than queried as one separate ReZenOnance addon. Provider endpoints are external dependencies and may change, rate-limit requests, or become unavailable. The presence of an adapter is not a guarantee of current upstream availability. The ReZenOnance provider adapters are adapted from [KATx-dev/ReZenOnance](https://github.com/KATx-dev/ReZenOnance), licensed under GPL-3.0-or-later; the license text is included at LICENSES/ReZenOnance-GPL-3.0.txt.
 
 ## Audio quality
 
