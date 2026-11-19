@@ -10,6 +10,22 @@ test("normalizes provider track ids and metadata", () => {
   assert.deepEqual(unpackTrackId(row.id), { providerId: "demo", upstreamId: "track/42" });
 });
 
+test("exposes exact resolution metadata and selected quality tier", () => {
+  const row = normalizeTrack({
+    id: "hires-1",
+    title: "Resolution Test",
+    format: "flac",
+    sampleRate: 192000,
+    bitDepth: 24,
+    bitrate: 9216
+  }, "demo", "high");
+  assert.equal(row.resolution, "24-bit / 192 kHz");
+  assert.equal(row.sampleRate, 192000);
+  assert.equal(row.bitDepth, 24);
+  assert.equal(row.bitrate, 9216);
+  assert.equal(row.qualityTier, "High quality");
+});
+
 test("deduplicates equivalent title, artist and duration", () => {
   const rows = [
     normalizeTrack({ id: "1", title: "Song!", artist: "The Artist", duration: 180 }, "a"),
