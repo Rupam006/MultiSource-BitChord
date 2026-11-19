@@ -8,7 +8,7 @@ const definitions = [
   { id: "prodpwh", name: "prodpwh", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
   { id: "confih", name: "Confih Hi-Res", baseUrl: process.env.CONFIH_URL || "https://bitchord.confih.tech", enabled: true },
   { id: "heisenberg", name: "Qobuz [Heisenberg]", baseUrl: process.env.HEISENBERG_URL || "https://heisenbergbackaaahh.de.deplexo.com/a", enabled: true },
-  { id: "juanjob", name: "juanjob hi res", baseUrl: process.env.JUANJOB_URL || "https://bitchord-hires-addon.de.deplexo.com", enabled: false, note: "The upstream requires a device proof signed for its own hostname. A proof for this aggregator cannot be forwarded." }
+  { id: "juanjob", name: "Hi-res (Qobuz / Tidal / Monochrome / Netease)", baseUrl: process.env.JUANJOB_URL || "https://hiress.onrender.com", enabled: true, note: "Forwards the verified BitChord request proof; upstream must allow the aggregator hostname." }
 ];
 
 function normalizeQuality(value) {
@@ -23,13 +23,13 @@ function qualityLabel(value) {
 const providers = definitions.map((definition) => ({
   ...definition,
   baseUrl: definition.baseUrl.replace(/\/manifest\.json$/i, "").replace(/\/+$/, ""),
-  async request(path, timeoutMs = DEFAULT_TIMEOUT_MS) {
+  async request(path, timeoutMs = DEFAULT_TIMEOUT_MS, forwardedAuth = {}) {
     if (!this.enabled || !this.baseUrl) throw new Error("provider is not configured");
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(`${this.baseUrl}${path}`, {
-        headers: { accept: "application/json", "user-agent": "MultiSource-BitChord/1.1" },
+        headers: { accept: "application/json", "user-agent": "MultiSource-BitChord/1.1", ...forwardedAuth },
         signal: controller.signal,
         redirect: "follow"
       });
@@ -39,25 +39,25 @@ const providers = definitions.map((definition) => ({
       clearTimeout(timer);
     }
   },
-  async search(query, quality, atmos = "stereo") {
+  async search(query, quality, atmos = "stereo", authHeaders = {}) {
     const params = new URLSearchParams({
       q: query,
       quality: normalizeQuality(quality),
       atmos: atmos === "auto" ? "auto" : "stereo"
     });
-    const payload = await this.request(`/search?${params}`);
+    const payload = await this.request(`/search?${params}`, DEFAULT_TIMEOUT_MS, this.id === "juanjob" ? authHeaders : {});
     const candidateRows = Array.isArray(payload)
       ? payload
       : (payload?.tracks || payload?.results || payload?.data?.tracks || payload?.data || []);
     const rows = Array.isArray(candidateRows) ? candidateRows : [];
     return rows.map((row) => normalizeTrack(row, this.id, normalizeQuality(quality))).filter(Boolean);
   },
-  async resolve(upstreamId, quality, atmos = "stereo") {
+  async resolve(upstreamId, quality, atmos = "stereo", authHeaders = {}) {
     const params = new URLSearchParams({
       quality: normalizeQuality(quality),
       atmos: atmos === "auto" ? "auto" : "stereo"
     });
-    const payload = await this.request(`/stream/${encodeURIComponent(upstreamId)}?${params}`, 8500);
+    const payload = await this.request(`/stream/${encodeURIComponent(upstreamId)}?${params}`, 8500, this.id === "juanjob" ? authHeaders : {});
     if (!payload || typeof payload !== "object") return null;
     const streamData = payload.stream && typeof payload.stream === "object" ? payload.stream : payload;
     const url = streamData.url || streamData.streamURL || streamData.streamUrl || streamData.downloadUrl;
