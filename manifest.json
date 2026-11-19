@@ -1,0 +1,22 @@
+{
+  "id": "dev.multisource.bitchord",
+  "name": "MultiSource BitChord",
+  "version": "1.0.0",
+  "description": "Aggregated music search with provider failover.",
+  "resources": ["search", "stream"],
+  "bitchordAuth": true,
+  "allowDownloads": 1,
+  "settings": [
+    {
+      "key": "quality",
+      "type": "select",
+      "label": "Audio quality",
+      "default": "lossless",
+      "options": [
+        { "label": "Lossless / Hi-Res", "value": "lossless" },
+        { "label": "High", "value": "high" },
+        { "label": "Low", "value": "low" }
+      ]
+    }
+  ]
+}
