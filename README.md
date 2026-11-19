@@ -42,16 +42,20 @@ These are request preferences, not guarantees. The selected spatial-audio prefer
 
 ## Provider configuration and status
 
-Most community sources originate from SudinChord's addon presets; ReZenOnance is an additional independent upstream. These URLs do not all represent public, anonymous, stable APIs.
+The Juanjo Hi-Res repository is integrated as direct upstream adapters rather than as a single addon dependency. Its own `/search` and `/stream` routes require hardware-bound BitChord proofs for its configured hostname, so this service does not proxy those protected routes.
 
 | Provider | Default / configuration | Integration status |
 |---|---|---|
-| prodpwh | `PRODPWH_ADDON_URL` | Disabled until you provide your private session URL. Add it as a Render secret later; never commit it. |
+| prodpwh | `PRODPWH_ADDON_URL` | Optional private personalized addon; enabled only when configured. Keep its URL in Render environment variables, never in Git. |
 | Confih Hi-Res | `CONFIH_URL` (default preset URL) | Generic BitChord route adapter; upstream auth/availability still needs live validation. |
 | Qobuz [Heisenberg] | `HEISENBERG_URL` (default ends in `/a`) | Generic adapter; preset endpoint was previously observed unavailable and needs live validation. |
-| ReZenOnance (Monochrome / Arcod) | `REZENONANCE_URL` (defaults to `https://rezenonance.onrender.com`) | Integrated through its documented `/search` and `/stream/:id` API using the existing generic provider adapter. Its upstream manifest is playback-only (`allowDownloads: 0`); live availability and stream compatibility still need validation. |
+| ReZenOnance (Monochrome / Arcod) | `REZENONANCE_URL` (defaults to `https://rezenonance.onrender.com`) | Existing generic adapter; retained as a separate upstream. |
+| Monochrome / Tidal | Monochrome instance registry and `tracks.monochrome.st` | Direct search and FLAC stream probing. Tidal uses the same Monochrome index here, so it is represented as one source rather than duplicate search requests. |
+| Qobuz (Juanjo upstream) | `JUANJO_QOBUZ_UPSTREAM_URL` (public default) | Direct search/stream adapter; availability depends on the upstream service. |
+| Netease | Meting public endpoint; optional `JUANJO_NETEASE_METING_URL` override | Direct catalogue lookup and redirect-to-FLAC validation. The source repository's private/tokenized bridge URL was deliberately not copied. |
+| Deezer catalogue | `api.deezer.com` | Search/catalogue only; selected tracks are resolved through the aggregator's other playable providers. |
 
-The generic adapter does not forge device proofs or invent undocumented endpoints. An upstream that is offline, returns a different API shape, or requires unsupported authentication will be skipped rather than returning fabricated tracks.
+The direct adapters validate returned URLs and reject encrypted or unverified audio where applicable. Provider presence does not guarantee that its upstream is currently online or that every result can be streamed.
 
 ## Environment variables
 
@@ -60,6 +64,8 @@ The generic adapter does not forge device proofs or invent undocumented endpoint
 - `CONFIH_URL` — optional Confih addon root.
 - `HEISENBERG_URL` — optional Heisenberg addon root.
 - `REZENONANCE_URL` — optional override for the ReZenOnance addon root (defaults to `https://rezenonance.onrender.com`).
+- `JUANJO_QOBUZ_UPSTREAM_URL` — optional Qobuz upstream override.
+- `JUANJO_NETEASE_METING_URL` — optional Netease Meting endpoint override.
 
 Never commit personal provider URLs or tokens.
 
