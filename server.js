@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import http from "node:http";
 import { createBitChordAuth } from "./src/auth.js";
 import { allProviders, findProvider, providerStatus } from "./src/providers/index.js";
-import { dedupeTracks, unpackTrackId } from "./src/normalize.js";
+import { audioResolutionScore, dedupeTracks, unpackTrackId } from "./src/normalize.js";
 
 const port = Number(process.env.PORT || 10000);
 const hostList = (process.env.BITCHORD_HOSTS || process.env.RENDER_EXTERNAL_HOSTNAME || "")
@@ -47,31 +47,107 @@ function cleanAtmos(value) {
   return value === "auto" ? "auto" : "stereo";
 }
 
+async function searchProviderSet(providers, query, quality, atmos, authHeaders) {
+  const eligible = providers.filter((provider) => provider.enabled && provider.baseUrl);
+  const settled = await Promise.allSettled(
+    eligible.map(async (provider) => ({
+      provider,
+      tracks: await provider.search(query, quality, atmos, authHeaders)
+    }))
+  );
+  const tracks = [];
+  const sources = {};
+  const successfulIds = new Set();
+  for (const result of settled) {
+    if (result.status !== "fulfilled") continue;
+    const { provider, tracks: rows } = result.value;
+    successfulIds.add(provider.id);
+    sources[provider.id] = rows.length;
+    tracks.push(...rows);
+  }
+  return { tracks, sources, successfulIds };
+}
+
 async function searchAll(query, quality, atmos, authHeaders) {
   const key = `${quality}:${atmos}:${query.toLowerCase()}`;
   const hit = cached(searchCache, key);
   if (hit) return hit;
 
-  // Providers are queried concurrently; a slow/offline source cannot block the others.
-  const settled = await Promise.allSettled(
-    allProviders.filter((provider) => provider.enabled && provider.baseUrl)
-      .map(async (provider) => ({ provider, tracks: await provider.search(query, quality, atmos, authHeaders) }))
-  );
-  const tracks = [];
-  const sources = {};
-  for (const result of settled) {
-    if (result.status !== "fulfilled") continue;
-    const { provider, tracks: rows } = result.value;
-    sources[provider.id] = rows.length;
-    for (const row of rows) {
-      trackMetadata.set(row.id, {
-        title: row.title, artist: row.artist, duration: row.duration || 0
-      });
-    }
-    tracks.push(...rows);
+  const primaryProviders = allProviders.filter((provider) => provider.role === "primary");
+  const fallbackProviders = allProviders.filter((provider) => provider.role !== "primary");
+  const primary = await searchProviderSet(primaryProviders, query, quality, atmos, authHeaders);
+
+  // prodpwh and the Juanjo family are the two primary groups. Search both at once.
+  // Enter fallback mode if neither primary returns a match, or either primary group
+  // is unreachable. A partially working primary result is retained and compared
+  // with all fallback results when fallback mode is entered.
+  const prodpwhConnected = primary.successfulIds.has("prodpwh");
+  const juanjoConnected = [...primary.successfulIds].some((id) => id.startsWith("juanjo-"));
+  const shouldSearchFallback = primary.tracks.length === 0 || !prodpwhConnected || !juanjoConnected;
+
+  let tracks = [...primary.tracks];
+  const sources = { ...primary.sources };
+  if (shouldSearchFallback) {
+    const fallback = await searchProviderSet(fallbackProviders, query, quality, atmos, authHeaders);
+    tracks.push(...fallback.tracks);
+    Object.assign(sources, fallback.sources);
+  }
+
+  for (const row of tracks) {
+    trackMetadata.set(row.id, {
+      title: row.title, artist: row.artist, duration: row.duration || 0,
+      sampleRate: row.sampleRate, bitDepth: row.bitDepth, bitrate: row.bitrate,
+      format: row.format, audioQuality: row.audioQuality,
+      _providerId: row._providerId, _upstreamId: row._upstreamId
+    });
   }
   const combined = dedupeTracks(tracks);
-  return save(searchCache, key, { tracks: combined, sources }, SEARCH_TTL);
+  return save(searchCache, key, {
+    tracks: combined,
+    sources,
+    searchMode: shouldSearchFallback ? "primary+fallback" : "primary"
+  }, SEARCH_TTL);
+}
+
+async function resolveMirrorTier(providers, metadata, query, quality, atmos, authHeaders) {
+  const eligible = providers.filter((provider) => provider.enabled && provider.baseUrl);
+  if (!eligible.length) return [];
+
+  const searches = await Promise.allSettled(eligible.map(async (provider) => ({
+    provider,
+    rows: await provider.search(query, quality, atmos, authHeaders)
+  })));
+  const candidates = [];
+  for (const result of searches) {
+    if (result.status !== "fulfilled") continue;
+    for (const row of result.value.rows) {
+      const titleScore = similarity(row.title, metadata.title);
+      const artistScore = similarity(row.artist, metadata.artist);
+      const delta = metadata.duration && row.duration
+        ? Math.abs(metadata.duration - row.duration)
+        : 0;
+      if (titleScore < 0.92 || (metadata.artist && artistScore < 0.55) || delta > 12) continue;
+      candidates.push({
+        provider: result.value.provider,
+        row,
+        matchScore: titleScore * 60 + artistScore * 30 - delta
+      });
+    }
+  }
+  candidates.sort((a, b) =>
+    audioResolutionScore(b.row) - audioResolutionScore(a.row) || b.matchScore - a.matchScore
+  );
+
+  const resolved = await Promise.allSettled(candidates.slice(0, 10).map(async (candidate) => {
+    const stream = await candidate.provider.resolve(candidate.row._upstreamId, quality, atmos, authHeaders);
+    if (!stream) throw new Error("mirror returned no playable stream");
+    return {
+      stream,
+      score: Math.max(audioResolutionScore(stream), audioResolutionScore(candidate.row)),
+      matchScore: candidate.matchScore
+    };
+  }));
+  return resolved.filter((result) => result.status === "fulfilled").map((result) => result.value);
 }
 
 async function resolveTrack(encodedId, quality, atmos, authHeaders) {
@@ -82,62 +158,55 @@ async function resolveTrack(encodedId, quality, atmos, authHeaders) {
   if (hit) return hit;
 
   const preferred = findProvider(parsed.providerId);
+  const metadata = trackMetadata.get(encodedId);
   const preferredAttempt = preferred?.enabled && preferred.baseUrl
-    ? preferred.resolve(parsed.upstreamId, quality, atmos, authHeaders).then((stream) => {
-        if (!stream) throw new Error("preferred source returned no playable stream");
-        return stream;
-      })
-    : Promise.reject(new Error("preferred source unavailable"));
+    ? preferred.resolve(parsed.upstreamId, quality, atmos, authHeaders)
+        .then((stream) => stream ? {
+          stream,
+          score: Math.max(audioResolutionScore(stream), audioResolutionScore(metadata || {})),
+          matchScore: Number.MAX_SAFE_INTEGER
+        } : null)
+        .catch(() => null)
+    : Promise.resolve(null);
 
-  // Search alternatives while the preferred source is resolving. Resolve the best
-  // matches concurrently and use the first playable direct URL rather than serially
-  // waiting on each mirror.
-  const fallbackAttempt = (async () => {
-    const metadata = trackMetadata.get(encodedId);
-    if (!metadata?.title) throw new Error("track metadata unavailable for failover");
+  // Compare every reachable primary stream before falling back. If the selected
+  // primary cannot resolve, its primary peers are searched together; only when no
+  // primary stream is playable do we fan out to all fallback backends.
+  let primaryPeers = [];
+  let fallbackStreams = [];
+  if (metadata?.title) {
     const query = [metadata.artist, metadata.title].filter(Boolean).join(" ");
-    const alternatives = allProviders.filter((provider) =>
-      provider !== preferred && provider.enabled && provider.baseUrl
-    );
-    const searches = await Promise.allSettled(
-      alternatives.map(async (provider) => ({
-        provider,
-        rows: await provider.search(query, quality, atmos, authHeaders)
-      }))
-    );
-    const candidates = [];
-    for (const result of searches) {
-      if (result.status !== "fulfilled") continue;
-      for (const row of result.value.rows) {
-        const titleScore = similarity(row.title, metadata.title);
-        const artistScore = similarity(row.artist, metadata.artist);
-        const delta = metadata.duration && row.duration
-          ? Math.abs(metadata.duration - row.duration)
-          : 0;
-        if (titleScore < 0.92 || (metadata.artist && artistScore < 0.55) || delta > 12) continue;
-        candidates.push({
-          provider: result.value.provider,
-          row,
-          score: titleScore * 60 + artistScore * 30 - delta
-        });
-      }
+    if (preferred?.role === "primary") {
+      primaryPeers = await resolveMirrorTier(
+        allProviders.filter((provider) => provider.role === "primary" && provider !== preferred),
+        metadata, query, quality, atmos, authHeaders
+      );
+    } else {
+      fallbackStreams = await resolveMirrorTier(
+        allProviders.filter((provider) => provider.role !== "primary" && provider !== preferred),
+        metadata, query, quality, atmos, authHeaders
+      );
     }
-    candidates.sort((a, b) => b.score - a.score);
-    const attempts = candidates.slice(0, 6).map(async (candidate) => {
-      const stream = await candidate.provider.resolve(candidate.row._upstreamId, quality, atmos, authHeaders);
-      if (!stream) throw new Error("mirror returned no playable stream");
-      return stream;
-    });
-    if (!attempts.length) throw new Error("no matching mirror found");
-    return Promise.any(attempts);
-  })();
-
-  try {
-    const stream = await Promise.any([preferredAttempt, fallbackAttempt]);
-    return save(streamCache, cacheKey, stream, STREAM_TTL);
-  } catch {
-    return null;
   }
+
+  const preferredResult = await preferredAttempt;
+  let candidates = [...primaryPeers, ...(preferredResult ? [preferredResult] : [])];
+  if (candidates.length) {
+    candidates.sort((a, b) => b.score - a.score || b.matchScore - a.matchScore);
+    return save(streamCache, cacheKey, candidates[0].stream, STREAM_TTL);
+  }
+
+  if (preferred?.role === "primary" && metadata?.title) {
+    const query = [metadata.artist, metadata.title].filter(Boolean).join(" ");
+    fallbackStreams = await resolveMirrorTier(
+      allProviders.filter((provider) => provider.role !== "primary"),
+      metadata, query, quality, atmos, authHeaders
+    );
+  }
+  candidates = [...fallbackStreams, ...(preferredResult ? [preferredResult] : [])];
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => b.score - a.score || b.matchScore - a.matchScore);
+  return save(streamCache, cacheKey, candidates[0].stream, STREAM_TTL);
 }
 
 function similarity(a, b) {
