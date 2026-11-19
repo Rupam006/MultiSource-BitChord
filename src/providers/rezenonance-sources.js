@@ -37,7 +37,7 @@ function rowsFrom(payload) {
 }
 function makeProvider({ id, name, baseUrl, searchRows, resolveStream }) {
   const provider = {
-    id, name, role: "fallback", baseUrl: cleanBase(baseUrl), enabled: Boolean(baseUrl),
+    id, name, role: "primary", baseUrl: cleanBase(baseUrl), enabled: Boolean(baseUrl),
     async search(query, quality, atmos = "stereo") {
       if (!this.enabled || !this.baseUrl) throw new Error("provider is not configured");
       const rows = await searchRows(query, quality, atmos, this);
