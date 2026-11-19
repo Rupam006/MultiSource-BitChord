@@ -46,7 +46,7 @@ const providers = definitions.map((definition) => ({
       ? payload
       : (payload?.tracks || payload?.results || payload?.data?.tracks || payload?.data || []);
     const rows = Array.isArray(candidateRows) ? candidateRows : [];
-    return rows.map((row) => normalizeTrack(row, this.id)).filter(Boolean);
+    return rows.map((row) => normalizeTrack(row, this.id, normalizeQuality(quality))).filter(Boolean);
   },
   async resolve(upstreamId, quality, atmos = "stereo") {
     const params = new URLSearchParams({
