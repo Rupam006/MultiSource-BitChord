@@ -94,8 +94,15 @@ export function createBitChordAuth({ hosts, fetchImpl = fetch, now = Date.now } 
         deviceKeyCache.set(cacheId, deviceKey);
       }
       const tokenHash = encode64url(await subtle.digest("SHA-256", enc.encode(token)));
-      const message = enc.encode(`${PROOF_CONTEXT}\n${allowedHosts[0]}\n${match[1]}\n${tokenHash}`);
-      const valid = await subtle.verify({ name: "ECDSA", hash: "SHA-256" }, deviceKey, decode64url(match[2]), message);
+      const signature = decode64url(match[2]);
+      let valid = false;
+      for (const hostname of allowedHosts) {
+        const message = enc.encode(`${PROOF_CONTEXT}\\n${hostname}\\n${match[1]}\\n${tokenHash}`);
+        if (await subtle.verify({ name: "ECDSA", hash: "SHA-256" }, deviceKey, signature, message)) {
+          valid = true;
+          break;
+        }
+      }
       if (!valid) return reject(401, "invalid_proof", "BitChord device proof is invalid for this hostname");
       return { ok: true, claims: { sub: claims.sub, ver: claims.ver, exp: claims.exp, sl: claims.sl } };
     } catch {
