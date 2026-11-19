@@ -5,10 +5,10 @@ const DEFAULT_TIMEOUT_MS = 6500;
 const QUALITY_LEVELS = new Set(["lossless", "high", "low"]);
 
 const definitions = [
-  { id: "prodpwh", name: "prodpwh", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
-  { id: "confih", name: "Confih Hi-Res", baseUrl: process.env.CONFIH_URL || "https://bitchord.confih.tech", enabled: true },
-  { id: "heisenberg", name: "Qobuz [Heisenberg]", baseUrl: process.env.HEISENBERG_URL || "https://heisenbergbackaaahh.de.deplexo.com/a", enabled: true },
-  { id: "rezenonance", name: "ReZenOnance (Monochrome / Arcod)", baseUrl: process.env.REZENONANCE_URL || "https://rezenonance.onrender.com", enabled: true, note: "Uses ReZenOnance public search/stream API; upstream currently advertises playback-only support." }
+  { id: "prodpwh", name: "prodpwh", role: "primary", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
+  { id: "confih", name: "Confih Hi-Res", role: "fallback", baseUrl: process.env.CONFIH_URL || "https://bitchord.confih.tech", enabled: true },
+  { id: "heisenberg", name: "Qobuz [Heisenberg]", role: "fallback", baseUrl: process.env.HEISENBERG_URL || "https://heisenbergbackaaahh.de.deplexo.com/a", enabled: true },
+  { id: "rezenonance", name: "ReZenOnance (Monochrome / Arcod)", role: "fallback", baseUrl: process.env.REZENONANCE_URL || "https://rezenonance.onrender.com", enabled: true, note: "Uses ReZenOnance public search/stream API; upstream currently advertises playback-only support." }
 ];
 
 function normalizeQuality(value) {
@@ -91,8 +91,8 @@ const providers = definitions.map((definition) => ({
 
 export const allProviders = [...providers, ...juanjoProviders];
 export function providerStatus() {
-  return allProviders.map(({ id, name, enabled, baseUrl, note }) => ({
-    id, name, enabled: Boolean(enabled && baseUrl), ...(note ? { note } : {})
+  return allProviders.map(({ id, name, role, enabled, baseUrl, note }) => ({
+    id, name, role, enabled: Boolean(enabled && baseUrl), ...(note ? { note } : {})
   }));
 }
 export function findProvider(id) { return allProviders.find((provider) => provider.id === id); }
