@@ -65,3 +65,20 @@ test("deduplication keeps the highest reported audio resolution", () => {
   assert.equal(result.length, 1);
   assert.equal(result[0].id, hires.id);
 });
+
+
+test("normalizes diacritics and ranks exact query matches above loose matches", async () => {
+  const { normalizeSearchText, searchRelevanceScore } = await import("../src/normalize.js");
+  assert.equal(normalizeSearchText("Beyoncé feat. Jay-Z"), "beyonce jay z");
+  const exact = normalizeTrack({ id: "1", title: "Yellow", artist: "Coldplay" }, "a");
+  const loose = normalizeTrack({ id: "2", title: "Yellow Submarine", artist: "Various" }, "b");
+  assert.ok(searchRelevanceScore(exact, "Yellow") > searchRelevanceScore(loose, "Yellow"));
+});
+
+test("deduplicates provider variants with small duration differences", () => {
+  const rows = [
+    normalizeTrack({ id: "1", title: "Song (Remastered)", artist: "The Artist", duration: 181 }, "a"),
+    normalizeTrack({ id: "2", title: "Song", artist: "The Artist", duration: 180 }, "b")
+  ];
+  assert.equal(dedupeTracks(rows).length, 1);
+});
