@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import http from "node:http";
 import { createBitChordAuth } from "./src/auth.js";
 import { allProviders, primaryProviders, fallbackProviders, findProvider, providerStatus } from "./src/providers/index.js";
-import { audioResolutionScore, dedupeTracks, unpackTrackId } from "./src/normalize.js";
+import { audioResolutionScore, dedupeTracks, searchRelevanceScore, unpackTrackId } from "./src/normalize.js";
 
 const port = Number(process.env.PORT || 10000);
 const hostList = (process.env.BITCHORD_HOSTS || process.env.RENDER_EXTERNAL_HOSTNAME || "")
@@ -69,16 +69,32 @@ async function searchProviderSet(providers, query, quality, atmos, authHeaders) 
 }
 
 async function searchAll(query, quality, atmos, authHeaders) {
-  const key = `${quality}:${atmos}:${query.toLowerCase()}`;
+  const normalizedQuery = String(query).trim().toLowerCase().replace(/\\s+/g, " ");
+  const key = `${quality}:${atmos}:${normalizedQuery}`;
   const hit = cached(searchCache, key);
   if (hit) return hit;
 
-  // Search primary sources first. Only query fallback sources when primary sources
-  // return no tracks, keeping fallback catalogues out of normal result selection.
+  // Always search the primary tier first. If it returns only a small catalogue,
+  // top it up with fallback results instead of hiding them until total failure.
   const primaryResult = await searchProviderSet(primaryProviders, query, quality, atmos, authHeaders);
-  const result = primaryResult.tracks.length
-    ? { ...primaryResult, searchMode: "primary" }
-    : { ...await searchProviderSet(fallbackProviders, query, quality, atmos, authHeaders), searchMode: "fallback" };
+  const primaryUnique = dedupeTracks(primaryResult.tracks, 60);
+  let result = { ...primaryResult, searchMode: "primary" };
+  if (primaryUnique.length < 12) {
+    const fallbackResult = await searchProviderSet(fallbackProviders, query, quality, atmos, authHeaders);
+    result = {
+      tracks: [...primaryResult.tracks, ...fallbackResult.tracks],
+      sources: { ...primaryResult.sources, ...fallbackResult.sources },
+      successfulIds: new Set([...primaryResult.successfulIds, ...fallbackResult.successfulIds]),
+      searchMode: primaryResult.tracks.length ? "primary+fallback" : "fallback"
+    };
+  }
+
+  const tracks = dedupeTracks(result.tracks, 60)
+    .map((track, index) => ({ track, index, relevance: searchRelevanceScore(track, query) }))
+    .sort((a, b) => b.relevance - a.relevance ||
+      audioResolutionScore(b.track) - audioResolutionScore(a.track) || a.index - b.index)
+    .map(({ track }) => track);
+
   for (const row of result.tracks) {
     trackMetadata.set(row.id, {
       title: row.title, artist: row.artist, duration: row.duration || 0,
@@ -88,7 +104,7 @@ async function searchAll(query, quality, atmos, authHeaders) {
     });
   }
   return save(searchCache, key, {
-    tracks: dedupeTracks(result.tracks),
+    tracks,
     sources: result.sources,
     searchMode: result.searchMode
   }, SEARCH_TTL);
@@ -154,29 +170,30 @@ async function resolveTrack(encodedId, quality, atmos, authHeaders) {
         .catch(() => null)
     : Promise.resolve(null);
 
-  // Resolve the selected provider and compare it with other primary mirrors.
-  // Only search fallback mirrors if no primary mirror can resolve the track.
-  let peerStreams = [];
+  // Resolve the selected source and primary mirrors concurrently. Do not pay
+  // for fallback mirror searches when either route already produced a stream.
+  let primaryStreams = [];
   if (metadata?.title) {
     const query = [metadata.artist, metadata.title].filter(Boolean).join(" ");
     const primaryPeers = allProviders.filter((provider) =>
       provider !== preferred && provider.role === "primary"
     );
-    peerStreams = await resolveMirrorTier(
+    primaryStreams = await resolveMirrorTier(
       primaryPeers, metadata, query, quality, atmos, authHeaders
     );
-    if (!peerStreams.length) {
-      const fallbackPeers = allProviders.filter((provider) =>
-        provider !== preferred && provider.role !== "primary"
-      );
-      peerStreams = await resolveMirrorTier(
-        fallbackPeers, metadata, query, quality, atmos, authHeaders
-      );
-    }
   }
 
   const preferredResult = await preferredAttempt;
-  const candidates = [...peerStreams, ...(preferredResult ? [preferredResult] : [])];
+  let candidates = [...primaryStreams, ...(preferredResult ? [preferredResult] : [])];
+  if (!candidates.length && metadata?.title) {
+    const query = [metadata.artist, metadata.title].filter(Boolean).join(" ");
+    const fallbackPeers = allProviders.filter((provider) =>
+      provider !== preferred && provider.role !== "primary"
+    );
+    candidates = await resolveMirrorTier(
+      fallbackPeers, metadata, query, quality, atmos, authHeaders
+    );
+  }
   if (!candidates.length) return null;
   candidates.sort((a, b) => b.score - a.score || b.matchScore - a.matchScore);
   return save(streamCache, cacheKey, candidates[0].stream, STREAM_TTL);
