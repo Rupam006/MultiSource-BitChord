@@ -17,6 +17,7 @@ A multi-source BitChord music addon that searches independent music providers, c
 | prodpwh | Private BitChord addon; configured separately |
 | Confih Hi-Res | Confih BitChord addon |
 | Official Monochrome | Official Monochrome Tracks API and direct FLAC streaming |
+| SoundCloud | Publicly playable full-length SoundCloud tracks; progressive and HLS streams |
 | Juanjo Qobuz | Qobuz search and stream source |
 | Juanjo Netease | Netease catalogue/stream bridge |
 | Juanjo Deezer | Deezer catalogue source; playback may resolve through another provider |
@@ -37,7 +38,7 @@ Provider endpoints are external dependencies and may change, rate-limit requests
 
 Audio resolution is determined from metadata actually supplied by a provider, such as codec, bit depth, sample rate and bitrate. When duplicate versions are found, the addon prefers the highest reported resolution. A request setting is not a guarantee: the actual stream depends on the provider and source recording. Missing metadata is treated as unknown. Dolby Atmos is reported as detected only when the upstream explicitly identifies it; selecting the Atmos preference does not guarantee an Atmos stream.
 
-The addon does not upsample audio or convert a lossy source into lossless audio. `checkValidLossless: 0` disables the app-side lossless compatibility gate; it does not make an unsupported codec or stream playable.
+SoundCloud is included only when a track is marked playable and exposes a non-preview full-length stream. SoundCloud streams are lossy (for example MP3, AAC or Opus); they are not presented as lossless. The addon does not upsample audio or convert a lossy source into lossless audio. `checkValidLossless: 0` disables the app-side lossless compatibility gate; it does not make an unsupported codec or stream playable.
 
 ## API endpoints
 
