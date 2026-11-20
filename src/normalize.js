@@ -22,7 +22,7 @@ function detectedSpatialAudio(track) {
 
 export function normalizeSearchText(value) {
   return String(value || "").toLowerCase().normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\p{M}/gu, "")
     .replace(/&/g, " and ")
     .replace(/\b(feat|ft)\.?\b/g, " ")
     .replace(/\([^)]*\)|\[[^\]]*\]/g, " ")
