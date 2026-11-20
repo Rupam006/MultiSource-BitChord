@@ -14,8 +14,8 @@ A multi-source BitChord music addon that searches independent music providers, c
 
 | Provider | Source |
 |---|---|
+| PencariMusic | PencariMovie Telegram music addon |
 | prodpwh | Private BitChord addon; configured separately |
-| Confih Hi-Res | Confih BitChord addon |
 | Official Monochrome | Official Monochrome Tracks API and direct FLAC streaming |
 | SoundCloud | Publicly playable full-length SoundCloud tracks; progressive and HLS streams |
 | Juanjo Qobuz | Qobuz search and stream source |
@@ -74,7 +74,6 @@ Set environment variables in the deployment environment. Do not commit private U
 | PORT | HTTP listening port |
 | BITCHORD_HOSTS | Comma-separated allowed hostnames for BitChord proof validation |
 | PRODPWH_ADDON_URL | Private prodpwh addon URL |
-| CONFIH_URL | Optional Confih addon root |
 | JUANJO_QOBUZ_UPSTREAM_URL | Optional Juanjo Qobuz upstream override |
 | JUANJO_NETEASE_METING_URL | Optional Juanjo Netease endpoint override |
 
