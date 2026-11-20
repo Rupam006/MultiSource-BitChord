@@ -68,6 +68,11 @@ async function searchProviderSet(providers, query, quality, atmos, authHeaders) 
   return { tracks, sources, successfulIds };
 }
 
+function saveTrackMetadata(id, metadata) {
+  if (trackMetadata.size >= 5000 && !trackMetadata.has(id)) trackMetadata.delete(trackMetadata.keys().next().value);
+  trackMetadata.set(id, metadata);
+}
+
 async function searchAll(query, quality, atmos, authHeaders) {
   const normalizedQuery = String(query).trim().toLowerCase().replace(/\\s+/g, " ");
   const key = `${quality}:${atmos}:${normalizedQuery}`;
@@ -96,7 +101,7 @@ async function searchAll(query, quality, atmos, authHeaders) {
     .map(({ track }) => track);
 
   for (const row of result.tracks) {
-    trackMetadata.set(row.id, {
+    saveTrackMetadata(row.id, {
       title: row.title, artist: row.artist, duration: row.duration || 0,
       sampleRate: row.sampleRate, bitDepth: row.bitDepth, bitrate: row.bitrate,
       format: row.format, audioQuality: row.audioQuality,
@@ -144,7 +149,7 @@ async function resolveMirrorTier(providers, metadata, query, quality, atmos, aut
     if (!stream) throw new Error("mirror returned no playable stream");
     return {
       stream,
-      score: Math.max(audioResolutionScore(stream), audioResolutionScore(candidate.row)),
+      score: audioResolutionScore(stream) || audioResolutionScore(candidate.row),
       matchScore: candidate.matchScore
     };
   }));
@@ -164,7 +169,7 @@ async function resolveTrack(encodedId, quality, atmos, authHeaders) {
     ? preferred.resolve(parsed.upstreamId, quality, atmos, authHeaders)
         .then((stream) => stream ? {
           stream,
-          score: Math.max(audioResolutionScore(stream), audioResolutionScore(metadata || {})),
+          score: audioResolutionScore(stream) || audioResolutionScore(metadata || {}),
           matchScore: Number.MAX_SAFE_INTEGER
         } : null)
         .catch(() => null)
