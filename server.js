@@ -83,8 +83,9 @@ async function searchAll(query, quality, atmos, authHeaders) {
   // top it up with fallback results instead of hiding them until total failure.
   const primaryResult = await searchProviderSet(primaryProviders, query, quality, atmos, authHeaders);
   const primaryUnique = dedupeTracks(primaryResult.tracks, 60);
+  const usefulPrimaryCount = primaryUnique.filter((track) => searchRelevanceScore(track, query) >= 120).length;
   let result = { ...primaryResult, searchMode: "primary" };
-  if (primaryUnique.length < 12) {
+  if (usefulPrimaryCount < 12) {
     const fallbackResult = await searchProviderSet(fallbackProviders, query, quality, atmos, authHeaders);
     result = {
       tracks: [...primaryResult.tracks, ...fallbackResult.tracks],
