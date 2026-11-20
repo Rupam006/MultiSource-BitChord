@@ -144,3 +144,48 @@ export function unpackTrackId(value) {
   try { return { providerId, upstreamId: Buffer.from(encoded, "base64url").toString("utf8") }; }
   catch { return null; }
 }
+
+
+const DISTINCT_VERSION_MARKERS = [
+  "live", "remix", "acoustic", "instrumental", "karaoke", "sped up",
+  "slowed", "nightcore", "cover", "demo", "radio edit", "extended mix"
+];
+
+function versionMarkers(value) {
+  const raw = String(value || "").toLowerCase().normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  return DISTINCT_VERSION_MARKERS.filter((marker) => new RegExp(`(?:^| )${marker.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}(?: |$)`).test(raw));
+}
+
+function tokenSimilarity(left, right) {
+  if (!left || !right) return 0;
+  if (left === right) return 1;
+  const a = left.split(" ");
+  const b = right.split(" ");
+  const aSet = new Set(a);
+  const bSet = new Set(b);
+  const intersection = [...aSet].filter((token) => bSet.has(token)).length;
+  const dice = (2 * intersection) / (aSet.size + bSet.size);
+  const prefix = left.startsWith(right) || right.startsWith(left) ? 0.08 : 0;
+  return Math.min(1, dice + prefix);
+}
+
+export function trackMatchScore(left, right) {
+  const leftTitle = normalizeSearchText(left?.title);
+  const rightTitle = normalizeSearchText(right?.title);
+  if (!leftTitle || !rightTitle) return 0;
+
+  const leftVersions = versionMarkers(left?.title);
+  const rightVersions = versionMarkers(right?.title);
+  if (leftVersions.join("|") !== rightVersions.join("|")) return 0;
+
+  const titleScore = tokenSimilarity(leftTitle, rightTitle);
+  if (titleScore < 0.55) return 0;
+
+  const leftArtist = normalizeSearchText(left?.artist);
+  const rightArtist = normalizeSearchText(right?.artist);
+  const artistScore = leftArtist && rightArtist
+    ? tokenSimilarity(leftArtist, rightArtist)
+    : 0.5;
+  return titleScore * 0.78 + artistScore * 0.22;
+}
