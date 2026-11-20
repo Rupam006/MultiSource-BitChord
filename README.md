@@ -4,9 +4,9 @@ A multi-source BitChord music addon that searches independent music providers, c
 
 ## Features
 
-- Searches all configured providers concurrently; every provider is treated as a primary source.
+- Searches Netease, Official Monochrome and PencariMusic as primary sources first; other providers are used only when primary search returns no tracks.
 - Compares duplicate tracks and prefers the highest reported audio resolution.
-- Tries alternative providers when the selected provider cannot resolve playback.
+- Tries other primary providers first for playback mirrors, then fallback providers if no primary mirror resolves.
 - Supports lossless, high-quality, data-saver and spatial-audio request preferences.
 - Provides BitChord-authenticated endpoints and provider health status.
 
@@ -22,7 +22,7 @@ A multi-source BitChord music addon that searches independent music providers, c
 | Juanjo Netease | Netease catalogue/stream bridge |
 | Juanjo Deezer | Deezer catalogue source; playback may resolve through another provider |
 
-All listed providers are primary. Search requests run across enabled providers concurrently; there is no separate fallback tier. Playback can be resolved by another provider when the selected provider cannot return a playable stream.
+Primary providers are Netease, Official Monochrome and PencariMusic. Fallback providers are Qobuz, Deezer catalogue, SoundCloud and prodpwh (when configured). Search checks all primary providers concurrently and uses fallback search only when the primary tier returns no tracks. Playback resolution tries the selected provider and other primary mirrors first; fallback mirrors are tried only when no primary mirror can resolve the track. Duplicate-track selection and audio-resolution scoring are unchanged.
 
 Provider endpoints are external dependencies and may change, rate-limit requests, or become unavailable. A configured adapter is not a guarantee of upstream availability.
 
@@ -45,7 +45,7 @@ SoundCloud is included only when a track is marked playable and exposes a non-pr
 | Method and path | Purpose |
 |---|---|
 | GET /manifest.json | Public BitChord addon manifest |
-| GET /search?q=... | Search all enabled providers |
+| GET /search?q=... | Search primary providers, then fallback providers if needed |
 | GET /stream/:id | Resolve a selected track to a playable stream |
 | GET /health | Provider configuration and availability status |
 
