@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import http from "node:http";
 import { createBitChordAuth } from "./src/auth.js";
-import { allProviders, findProvider, providerStatus } from "./src/providers/index.js";
+import { allProviders, primaryProviders, fallbackProviders, findProvider, providerStatus } from "./src/providers/index.js";
 import { audioResolutionScore, dedupeTracks, unpackTrackId } from "./src/normalize.js";
 
 const port = Number(process.env.PORT || 10000);
@@ -73,8 +73,12 @@ async function searchAll(query, quality, atmos, authHeaders) {
   const hit = cached(searchCache, key);
   if (hit) return hit;
 
-  // Every configured provider is queried concurrently; there is no fallback tier.
-  const result = await searchProviderSet(allProviders, query, quality, atmos, authHeaders);
+  // Search primary sources first. Only query fallback sources when primary sources
+  // return no tracks, keeping fallback catalogues out of normal result selection.
+  const primaryResult = await searchProviderSet(primaryProviders, query, quality, atmos, authHeaders);
+  const result = primaryResult.tracks.length
+    ? { ...primaryResult, searchMode: "primary" }
+    : { ...await searchProviderSet(fallbackProviders, query, quality, atmos, authHeaders), searchMode: "fallback" };
   for (const row of result.tracks) {
     trackMetadata.set(row.id, {
       title: row.title, artist: row.artist, duration: row.duration || 0,
@@ -86,7 +90,7 @@ async function searchAll(query, quality, atmos, authHeaders) {
   return save(searchCache, key, {
     tracks: dedupeTracks(result.tracks),
     sources: result.sources,
-    searchMode: "all-providers"
+    searchMode: result.searchMode
   }, SEARCH_TTL);
 }
 
@@ -150,15 +154,25 @@ async function resolveTrack(encodedId, quality, atmos, authHeaders) {
         .catch(() => null)
     : Promise.resolve(null);
 
-  // Try the selected provider and all other providers concurrently, then prefer
-  // the highest reported audio resolution among valid matching streams.
+  // Resolve the selected provider and compare it with other primary mirrors.
+  // Only search fallback mirrors if no primary mirror can resolve the track.
   let peerStreams = [];
   if (metadata?.title) {
     const query = [metadata.artist, metadata.title].filter(Boolean).join(" ");
-    peerStreams = await resolveMirrorTier(
-      allProviders.filter((provider) => provider !== preferred),
-      metadata, query, quality, atmos, authHeaders
+    const primaryPeers = allProviders.filter((provider) =>
+      provider !== preferred && provider.role === "primary"
     );
+    peerStreams = await resolveMirrorTier(
+      primaryPeers, metadata, query, quality, atmos, authHeaders
+    );
+    if (!peerStreams.length) {
+      const fallbackPeers = allProviders.filter((provider) =>
+        provider !== preferred && provider.role !== "primary"
+      );
+      peerStreams = await resolveMirrorTier(
+        fallbackPeers, metadata, query, quality, atmos, authHeaders
+      );
+    }
   }
 
   const preferredResult = await preferredAttempt;
