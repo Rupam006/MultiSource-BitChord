@@ -26,7 +26,7 @@ async function probeStream(url) {
       return { ok: false, status: response.status, reason: "http_status" };
     }
     const contentType = String(response.headers.get("content-type") || "").toLowerCase();
-    if (/text\\/html|application\\/json/.test(contentType)) {
+    if (contentType.startsWith("text/html") || contentType.includes("application/json")) {
       await response.body?.cancel().catch(() => {});
       return { ok: false, status: response.status, contentType, reason: "non_media_content_type" };
     }
@@ -72,7 +72,7 @@ async function checkProvider(provider) {
     for (const row of rows.slice(0, 5)) {
       try {
         const stream = await provider.resolve(row._upstreamId, "lossless", "stereo", {});
-        if (!stream?.url || !/^https:\\/\\//i.test(stream.url)) continue;
+        if (!stream?.url || new URL(stream.url).protocol !== "https:") continue;
         const probe = await probeStream(stream.url);
         if (probe.ok) {
           return {
