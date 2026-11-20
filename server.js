@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import http from "node:http";
 import { createBitChordAuth } from "./src/auth.js";
-import { allProviders, primaryProviders, fallbackProviders, findProvider, providerStatus } from "./src/providers/index.js";
-import { audioResolutionScore, dedupeTracks, searchRelevanceScore, unpackTrackId } from "./src/normalize.js";
+import { allProviders, primaryProviders, fallbackProviders, findProvider, isProviderAvailable, providerStatus } from "./src/providers/index.js";
+import { audioResolutionScore, dedupeTracks, searchRelevanceScore, trackMatchScore, unpackTrackId } from "./src/normalize.js";
 
 const port = Number(process.env.PORT || 10000);
 const hostList = (process.env.BITCHORD_HOSTS || process.env.RENDER_EXTERNAL_HOSTNAME || "")
@@ -50,7 +50,7 @@ function cleanAtmos(value) {
 }
 
 async function searchProviderSet(providers, query, quality, atmos, authHeaders) {
-  const eligible = providers.filter((provider) => provider.enabled && provider.baseUrl);
+  const eligible = providers.filter(isProviderAvailable);
   const settled = await Promise.allSettled(
     eligible.map(async (provider) => ({
       provider,
@@ -139,16 +139,18 @@ async function resolveMirrorTier(providers, metadata, query, quality, atmos, aut
   for (const result of searches) {
     if (result.status !== "fulfilled") continue;
     for (const row of result.value.rows) {
-      const titleScore = similarity(row.title, metadata.title);
-      const artistScore = similarity(row.artist, metadata.artist);
+      const matchScore = trackMatchScore(row, metadata);
       const delta = metadata.duration && row.duration
         ? Math.abs(metadata.duration - row.duration)
         : 0;
-      if (titleScore < 0.92 || (metadata.artist && artistScore < 0.55) || delta > 12) continue;
+      const durationTolerance = metadata.duration
+        ? Math.max(8, Math.min(18, metadata.duration * 0.04))
+        : 18;
+      if (matchScore < 0.72 || delta > durationTolerance) continue;
       candidates.push({
         provider: result.value.provider,
         row,
-        matchScore: titleScore * 60 + artistScore * 30 - delta
+        matchScore: matchScore * 100 - delta * 0.5
       });
     }
   }
@@ -177,7 +179,7 @@ async function resolveTrackUncached(encodedId, quality, atmos, authHeaders) {
 
   const preferred = findProvider(parsed.providerId);
   const metadata = trackMetadata.get(encodedId);
-  const preferredAttempt = preferred?.enabled && preferred.baseUrl
+  const preferredAttempt = preferred && isProviderAvailable(preferred)
     ? preferred.resolve(parsed.upstreamId, quality, atmos, authHeaders)
         .then((stream) => stream ? {
           stream,
@@ -225,18 +227,6 @@ async function resolveTrack(encodedId, quality, atmos, authHeaders) {
   finally { if (streamInflight.get(key) === pending) streamInflight.delete(key); }
 }
 
-function similarity(a, b) {
-  const clean = (value) => String(value || "").toLowerCase().normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "").replace(/\([^)]*\)|\[[^\]]*\]/g, " ")
-    .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-  const left = clean(a);
-  const right = clean(b);
-  if (!left || !right) return 0;
-  if (left === right) return 1;
-  const aWords = new Set(left.split(" "));
-  const bWords = new Set(right.split(" "));
-  return [...aWords].filter((word) => bWords.has(word)).length / Math.max(aWords.size, bWords.size);
-}
 
 const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") {
