@@ -1,6 +1,6 @@
 # MultiSource BitChord
 
-A BitChord music-streaming addon that brings multiple independent music sources into one manifest. Search once, compare available versions, and resolve playback from the best compatible source.
+A BitChord music-streaming addon that brings multiple independent music sources into one manifest. Offers Hi-Res audio output up to 24-bit/192 kHz.
 
 ## Features
 
@@ -13,7 +13,7 @@ A BitChord music-streaming addon that brings multiple independent music sources 
 
 ## Providers
 
-| Source | Role | Highest quality level | Source / note |
+| Source | Role | Quality level | Source / note |
 |----|---|----|---|
 | Netease (Meting) | Primary | Lossless: up to 16-bit/44.1 kHz | Juanjo Netease upstream adapter |
 | Monochrome | Primary | Hi-Res: up to 24-bit/192 kHz | Monochrome adapter; validates FLAC stream metadata |
