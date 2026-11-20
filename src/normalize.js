@@ -24,6 +24,7 @@ export function normalizeSearchText(value) {
   return String(value || "").toLowerCase().normalize("NFD")
     .replace(/\p{M}/gu, "")
     .replace(/&/g, " and ")
+    .replace(/['’]/g, "")
     .replace(/\b(feat|ft)\.?\b/g, " ")
     .replace(/\([^)]*\)|\[[^\]]*\]/g, " ")
     .replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
