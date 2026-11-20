@@ -253,6 +253,7 @@ const server = http.createServer(async (req, res) => {
   if (path === "/search") {
     const query = (url.searchParams.get("q") || "").trim();
     if (!query) return json(res, 200, { tracks: [] });
+    if (query.length > 200) return json(res, 400, { error: "query_too_long", tracks: [] });
     try {
       const quality = cleanQuality(url.searchParams.get("quality"));
       const atmos = cleanAtmos(url.searchParams.get("atmos"));
@@ -263,7 +264,9 @@ const server = http.createServer(async (req, res) => {
     }
   }
   if (path.startsWith("/stream/")) {
-    const id = decodeURIComponent(path.slice("/stream/".length));
+    let id;
+    try { id = decodeURIComponent(path.slice("/stream/".length)); }
+    catch { return json(res, 400, { error: "invalid_track_id" }); }
     const quality = cleanQuality(url.searchParams.get("quality"));
     const atmos = cleanAtmos(url.searchParams.get("atmos"));
     const stream = await resolveTrack(id, quality, atmos, upstreamAuth);
