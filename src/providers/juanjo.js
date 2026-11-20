@@ -130,7 +130,7 @@ async function deezerSearch(query) {
   }) : null), "Deezer catalogue");
 }
 
-function provider(id, name, searchFn, resolveFn, role = "fallback") {
+function provider(id, name, searchFn, resolveFn, role = "primary") {
   return {
     id, name, role, enabled: true, baseUrl: "direct-upstream",
     async search(query, quality, atmos) {
@@ -142,7 +142,7 @@ function provider(id, name, searchFn, resolveFn, role = "fallback") {
 }
 
 export const juanjoProviders = [
-  provider("juanjo-qobuz", "Qobuz (Juanjo upstream)", qobuzSearch, qobuzResolve, "fallback"),
+  provider("juanjo-qobuz", "Qobuz (Juanjo upstream)", qobuzSearch, qobuzResolve, "primary"),
   provider("juanjo-netease", "Netease (Meting)", neteaseSearch, neteaseResolve, "primary"),
-  provider("juanjo-deezer", "Deezer catalogue (mirror playback)", deezerSearch, null, "fallback")
+  provider("juanjo-deezer", "Deezer catalogue (mirror playback)", deezerSearch, null, "primary")
 ];

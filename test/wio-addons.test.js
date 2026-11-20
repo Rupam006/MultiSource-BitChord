@@ -1,16 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { wioAddonProviders } from "../src/providers/wio-addons.js";
+import { allProviders } from "../src/providers/index.js";
 
-test("WioLand sources are assigned to the requested primary and fallback tiers", () => {
-  assert.deepEqual(wioAddonProviders.map(({ id, role }) => [id, role]), [
-    ["eljohn-mono", "primary"],
-    ["qobuz-addon", "primary"],
-    ["confih", "fallback"],
-    ["gglos", "fallback"],
-    ["lastbabe", "fallback"],
-    ["tido", "fallback"]
+test("all WioLand providers are enabled in the unified provider pool", () => {
+  assert.deepEqual(wioAddonProviders.map(({ id }) => id), [
+    "eljohn-mono", "qobuz-addon", "confih", "gglos", "lastbabe", "tido"
   ]);
+  assert.ok(wioAddonProviders.every((provider) => provider.enabled && provider.role === "primary"));
+  assert.ok(allProviders.every((provider) => provider.role === "primary"));
 });
 
 test("generic WioLand addon adapter reads manifest quality options and resolves secure streams", async () => {

@@ -8,7 +8,7 @@ const DEFAULT_TIMEOUT_MS = 6500;
 const QUALITY_LEVELS = new Set(["lossless", "high", "low"]);
 
 const definitions = [
-  { id: "prodpwh", name: "prodpwh", role: "fallback", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
+  { id: "prodpwh", name: "prodpwh", role: "primary", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
 ];
 
 function normalizeQuality(value) {
@@ -95,8 +95,8 @@ for (const provider of allProviders) {
   providerHealth.wrap(provider, "search");
   providerHealth.wrap(provider, "resolve");
 }
-export const primaryProviders = allProviders.filter((provider) => provider.role === "primary");
-export const fallbackProviders = allProviders.filter((provider) => provider.role === "fallback");
+export const primaryProviders = allProviders;
+export const fallbackProviders = [];
 export function isProviderAvailable(provider) {
   return Boolean(provider?.enabled && provider?.baseUrl && providerHealth.isAvailable(provider));
 }
