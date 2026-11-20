@@ -15,16 +15,16 @@ A BitChord music-streaming addon that brings multiple independent music sources 
 
 | Source | Role | Quality level | Source / note |
 |----|---|----|---|
-| Netease (Meting) | Primary | Lossless: up to 16-bit/44.1 kHz | Juanjo Netease upstream adapter |
-| Monochrome | Primary | Hi-Res: up to 24-bit/192 kHz | Monochrome adapter; validates FLAC stream metadata |
-| Eljohnzc Monochrome | Primary | Hi-Res: up to 24-bit/192 kHz | WioLand source module |
-| Confih Hi-Res | Fallback | Hi-Res: up to 24-bit/192 kHz | WioLand Confih source module |
-| Qobuz Addon | Fallback | Hi-Res: up to 24-bit/192 kHz | WioLand Qobuz Addon module |
-| Juanjo Qobuz | Fallback | Hi-Res: up to 24-bit/192 kHz | Juanjo Qobuz upstream adapter |
-| gglos | Fallback | Lossless / Hi-Res: up to 24-bit/192 kHz | WioLand source module |
-| LastBabe | Fallback | Lossless / Hi-Res: up to 24-bit/192 kHz | WioLand source module |
-| Tido | Fallback | Lossless / Hi-Res: up to 24-bit/192 kHz | WioLand source module |
-| Deezer catalogue | Fallback | Lossless catalogue metadata: up to 16-bit/44.1 kHz ; playback resolved by another source | Existing Juanjo Deezer catalogue adapter |
+| Netease (Meting) | Primary | Lossless: up to `16-bit/44.1 kHz` | Juanjo Netease upstream adapter |
+| Monochrome | Primary | Hi-Res: up to `24-bit/192 kHz` | Monochrome adapter; validates FLAC stream metadata |
+| Eljohnzc Monochrome | Primary | Hi-Res: up to `24-bit/192 kHz` | WioLand source module |
+| Confih Hi-Res | Fallback | Hi-Res: up to `24-bit/192 kHz` | WioLand Confih source module |
+| Qobuz Addon | Fallback | Hi-Res: up to `24-bit/192 kHz` | WioLand Qobuz Addon module |
+| Juanjo Qobuz | Fallback | Hi-Res: up to `24-bit/192 kHz` | Juanjo Qobuz upstream adapter |
+| gglos | Fallback | Lossless / Hi-Res: up to `24-bit/192 kHz` | WioLand source module |
+| LastBabe | Fallback | Lossless / Hi-Res: up to `24-bit/192 kHz` | WioLand source module |
+| Tido | Fallback | Lossless / Hi-Res: up to `24-bit/192 kHz` | WioLand source module |
+| Deezer catalogue | Fallback | Lossless catalogue metadata: up to `16-bit/44.1 kHz` ; playback resolved by another source | Existing Juanjo Deezer catalogue adapter |
 | prodpwh | Fallback | Depends on configured addon; bitrate and resolution vary | Optional private addon, enabled through environment |
 
 *These are format ceilings, not guarantees for every track. The kbps figures are uncompressed PCM-equivalent bitrates; actual compressed FLAC bitrates vary with the audio. Stream quality depends on the recording, provider response and available metadata.*
