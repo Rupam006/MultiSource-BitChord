@@ -19,7 +19,7 @@ A BitChord music-streaming addon that brings multiple independent music sources 
 | Monochrome | Primary | Hi-Res: up to `24-bit/192 kHz` | Monochrome adapter; validates FLAC stream metadata |
 | Eljohnzc Monochrome | Primary | Hi-Res: up to `24-bit/192 kHz` | WioLand source module |
 | Confih Hi-Res | Fallback | Hi-Res: up to `24-bit/192 kHz` | WioLand Confih source module |
-| Qobuz Addon | Fallback | Hi-Res: up to `24-bit/192 kHz` | WioLand Qobuz Addon module |
+| Qobuz Addon | Primary | Hi-Res: up to `24-bit/192 kHz` | WioLand Qobuz Addon module |
 | Juanjo Qobuz | Fallback | Hi-Res: up to `24-bit/192 kHz` | Juanjo Qobuz upstream adapter |
 | gglos | Fallback | Lossless / Hi-Res: up to `24-bit/192 kHz` | WioLand source module |
 | LastBabe | Fallback | Lossless / Hi-Res: up to `24-bit/192 kHz` | WioLand source module |
