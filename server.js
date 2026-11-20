@@ -76,7 +76,7 @@ function saveTrackMetadata(id, metadata) {
 }
 
 async function searchAllUncached(query, quality, atmos, authHeaders) {
-  const normalizedQuery = String(query).trim().toLowerCase().replace(/\\s+/g, " ");
+  const normalizedQuery = String(query).trim().toLowerCase().replace(/\s+/g, " ");
   const key = `${quality}:${atmos}:${normalizedQuery}`;
   const hit = cached(searchCache, key);
   if (hit) return hit;
@@ -119,7 +119,7 @@ async function searchAllUncached(query, quality, atmos, authHeaders) {
 }
 
 async function searchAll(query, quality, atmos, authHeaders) {
-  const key = `${quality}:${atmos}:${String(query).trim().toLowerCase().replace(/\\s+/g, " ")}`;
+  const key = `${quality}:${atmos}:${String(query).trim().toLowerCase().replace(/\s+/g, " ")}`;
   if (searchInflight.has(key)) return searchInflight.get(key);
   const pending = searchAllUncached(query, quality, atmos, authHeaders);
   searchInflight.set(key, pending);
