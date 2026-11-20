@@ -20,6 +20,37 @@ function detectedSpatialAudio(track) {
   return undefined;
 }
 
+export function normalizeSearchText(value) {
+  return String(value || "").toLowerCase().normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, " and ")
+    .replace(/\b(feat|ft)\.?\b/g, " ")
+    .replace(/\([^)]*\)|\[[^\]]*\]/g, " ")
+    .replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export function searchRelevanceScore(track, query) {
+  const q = normalizeSearchText(query);
+  const title = normalizeSearchText(track?.title);
+  const artist = normalizeSearchText(track?.artist);
+  const album = normalizeSearchText(track?.album);
+  if (!q || !title) return 0;
+  const qTokens = q.split(" ").filter(Boolean);
+  const titleTokens = new Set(title.split(" "));
+  const artistTokens = new Set(artist.split(" "));
+  const albumTokens = new Set(album.split(" "));
+  const overlap = (tokens, set) => tokens.filter((token) => set.has(token)).length / Math.max(tokens.length, 1);
+  const titleCoverage = overlap(qTokens, titleTokens);
+  const allCoverage = qTokens.filter((token) => titleTokens.has(token) || artistTokens.has(token) || albumTokens.has(token)).length / qTokens.length;
+  const exactTitle = title === q ? 1 : 0;
+  const titleStarts = title.startsWith(q) ? 1 : 0;
+  const compactTitle = title.replace(/\s/g, "");
+  const compactQuery = q.replace(/\s/g, "");
+  const compactExact = compactTitle === compactQuery ? 1 : 0;
+  return exactTitle * 1000 + compactExact * 900 + titleStarts * 250 +
+    titleCoverage * 150 + allCoverage * 100 + (title.includes(q) ? 100 : 0);
+}
+
 export function normalizeTrack(track, providerId, requestedQuality = "lossless", requestedAtmos = "stereo") {
   if (!track || typeof track !== "object" || !track.title) return null;
   const rawId = String(track.id ?? track.trackId ?? "");
@@ -29,7 +60,8 @@ export function normalizeTrack(track, providerId, requestedQuality = "lossless",
   const artist = Array.isArray(artistValue)
     ? artistValue.map((item) => typeof item === "string" ? item : item?.name).filter(Boolean).join(", ")
     : String(artistValue);
-  const duration = Number(track.duration ?? track.durationSeconds ?? (Number(track.durationMs) ? Number(track.durationMs) / 1000 : 0));
+  const rawDuration = Number(track.duration ?? track.durationSeconds ?? (Number(track.durationMs) ? Number(track.durationMs) / 1000 : 0));
+  const duration = rawDuration > 3600 && !track.durationMs ? rawDuration / 1000 : rawDuration;
   const sampleRate = Number(track.sampleRate ?? track.sample_rate);
   const bitDepth = Number(track.bitDepth ?? track.bit_depth);
   const bitrate = Number(track.bitrate);
@@ -43,10 +75,10 @@ export function normalizeTrack(track, providerId, requestedQuality = "lossless",
     : undefined;
   return {
     id: `${providerId}:${id}`,
-    title: String(track.title),
-    artist,
-    album: String(track.album ?? ""),
-    ...(Number.isFinite(duration) && duration > 0 ? { duration: duration > 3600 ? Math.round(duration / 1000) : duration } : {}),
+    title: String(track.title).trim(),
+    artist: artist.trim(),
+    album: String(track.album ?? "").trim(),
+    ...(Number.isFinite(duration) && duration > 0 ? { duration: Math.round(duration) } : {}),
     ...(track.artworkURL || track.artwork || track.cover ? { artworkURL: track.artworkURL || track.artwork || track.cover } : {}),
     format,
     audioQuality: quality,
@@ -93,10 +125,11 @@ export function dedupeTracks(tracks, limit = 60) {
     .sort((a, b) => audioResolutionScore(b.track) - audioResolutionScore(a.track) || a.index - b.index)
     .map(({ track }) => track);
   for (const track of ranked) {
-    const key = [track.title, track.artist, track.duration || ""].join("|")
-      .toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
-      .replace(/[^a-z0-9| ]/g, "").replace(/\\s+/g, " ").trim();
-    if (seen.has(key)) continue;
+    const title = normalizeSearchText(track.title);
+    const artist = normalizeSearchText(track.artist);
+    const duration = Number(track.duration) || 0;
+    const key = `${title}|${artist}|${duration ? Math.round(duration / 3) * 3 : ""}`;
+    if (!title || seen.has(key)) continue;
     seen.add(key);
     const { _providerId, _upstreamId, ...publicTrack } = track;
     output.push(publicTrack);
