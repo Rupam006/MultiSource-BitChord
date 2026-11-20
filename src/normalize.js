@@ -154,7 +154,8 @@ const DISTINCT_VERSION_MARKERS = [
 function versionMarkers(value) {
   const raw = String(value || "").toLowerCase().normalize("NFD")
     .replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
-  return DISTINCT_VERSION_MARKERS.filter((marker) => new RegExp(`(?:^| )${marker.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}(?: |$)`).test(raw));
+  const padded = ` ${raw} `;
+  return DISTINCT_VERSION_MARKERS.filter((marker) => padded.includes(` ${marker} `));
 }
 
 function tokenSimilarity(left, right) {
