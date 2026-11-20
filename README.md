@@ -1,65 +1,53 @@
 # MultiSource BitChord
 
-A multi-source BitChord music addon that searches independent music providers, compares reported audio quality, and resolves playable streams.
+A BitChord music-streaming addon that brings multiple independent music sources into one manifest. Search once, compare available versions, and resolve playback from the best compatible source.
 
 ## Features
 
-- Searches Netease, Official Monochrome and Eljohnzc Monochrome as primary sources first; fallback providers top up small primary result sets.
-- Keeps the Juanjo Qobuz adapter and Deezer catalogue in the fallback tier; Deezer remains catalogue-only.
-- Adds Confih Hi-Res, Qobuz Addon, gglos, LastBabe and Tido as fallback sources.
-- Ranks results by title/artist relevance, then reported audio resolution; normalizes accents and common title variants for duplicate detection.
-- Compares duplicate tracks and prefers the highest reported audio resolution.
-- Tries other primary providers first for playback mirrors, then fallback providers if no primary mirror resolves.
-- Supports lossless, high-quality, data-saver and spatial-audio request preferences.
-- Provides BitChord-authenticated endpoints, provider health metrics and automatic circuit breakers.
-- Matches playback mirrors using title, artist, duration and version markers to avoid mixing live, remix and studio recordings.
+- **Multi-source manifest:** Combines independent catalogues and streaming providers in one BitChord addon, with primary and fallback routing.
+- **Resolution selection:** Supports maximum lossless/Hi-Res, high-lossless and low-bandwidth preferences, based on the selected provider's available stream.
+- Track matching across sources using title, artist, duration and version information.
+- Duplicate detection and ranking by relevance and reported audio resolution.
+- Primary-first playback resolution, with fallback mirrors when primary sources cannot resolve a track.
+- Provider health monitoring and circuit breakers to isolate failing upstreams.
+- Short-lived response caching and bounded search results.
 
 ## Providers
 
-| Provider | Role | Notes |
-|---|---|---|
-| Netease (Meting) | Primary | Existing Juanjo upstream adapter |
-| Official Monochrome | Primary | Existing adapter validates actual FLAC STREAMINFO before accepting a stream |
-| Eljohnzc Monochrome | Primary | WioLand addon; streaming-only source |
-| Confih Hi-Res | Fallback | WioLand addon |
-| Qobuz Addon | Fallback | WioLand addon |
-| Juanjo Qobuz | Fallback | Existing direct upstream adapter |
-| gglos | Fallback | WioLand addon |
-| LastBabe | Fallback | WioLand addon |
-| Tido | Fallback | WioLand addon |
-| Deezer catalogue | Fallback | Catalogue-only; playback must resolve through an audio provider |
-| prodpwh | Fallback | Private addon; enabled only when configured |
+| Source | Role | Highest quality level | Source / note |
+|---|---|---|---|
+| Netease (Meting) | Primary | Lossless (provider/catalogue dependent) | Existing Juanjo Netease upstream adapter |
+| Official Monochrome | Primary | Lossless / Hi-Res where available | Existing Monochrome adapter; validates FLAC stream metadata |
+| Eljohnzc Monochrome | Primary | Lossless / Hi-Res where available | WioLand source module |
+| Confih Hi-Res | Fallback | Hi-Res lossless where available | WioLand Confih source module |
+| Qobuz Addon | Fallback | Hi-Res lossless where available | WioLand Qobuz Addon module |
+| Juanjo Qobuz | Fallback | Hi-Res lossless where available | Existing direct Juanjo Qobuz upstream adapter |
+| gglos | Fallback | Lossless / Hi-Res where available | WioLand source module |
+| LastBabe | Fallback | Lossless / Hi-Res where available | WioLand source module |
+| Tido | Fallback | Lossless / Hi-Res where available | WioLand source module |
+| Deezer catalogue | Fallback | Lossless catalogue metadata; playback resolved by another source | Existing Juanjo Deezer catalogue adapter; not an independent stream resolver |
+| prodpwh | Fallback | Depends on configured addon | Optional private addon, enabled through environment |
 
-The WioLand Juanjob module is not used as a replacement: the current Juanjo Hi-Res addon advertises hardware-backed BitChord authentication for /search and /stream, but the WioLand module calls those endpoints without forwarding proof headers. The existing Juanjo adapter uses its public Qobuz and Netease upstreams directly instead. The WioLand Monochrome module also does not verify the returned media bytes; the existing Official Monochrome adapter probes the FLAC header and reads the actual sample rate and bit depth, so it is retained.
-
-The WioLand Wiochord Lossless module is an aggregator rather than an independent provider. Its search chain internally invokes Qobuz, Confih and Juanjob, which would bypass the requested primary/fallback tiers; its stream path also routes non-Qobuz IDs back to Monochrome. The separate Dial Monochrome source duplicates the existing Official Monochrome endpoint. Neither is added as a duplicate source.
-
-Search checks all primary providers concurrently and searches fallback providers when fewer than 12 unique primary results are available, then ranks the combined results by relevance and reported resolution. Playback resolution tries the selected provider and other primary mirrors first; fallback mirrors are tried only when no primary mirror can resolve the track. Duplicate-track selection and audio-resolution scoring are unchanged.
-
-Provider endpoints are external dependencies and may change, rate-limit requests, or become unavailable. A configured adapter is not a guarantee of upstream availability. Provider health tracks consecutive failures, request counts and average latency. After three consecutive errors, a provider circuit opens for 30 seconds and backs off on repeated failures; a single half-open probe tests recovery before normal traffic resumes.
+*Quality levels describe the highest level a source may offer, not a guarantee for every track. Actual stream quality depends on the recording, provider response and available metadata.*
 
 ## Audio quality
 
-| App preference | Request value | Meaning |
-|---|---|---|
-| Maximum Lossless / Hi-Res | lossless | Requests the provider's best lossless rendition |
-| High Lossless | high | Requests a high-quality rendition |
-| Low / Data saver | low | Requests a lower-bandwidth rendition |
-| Stereo | stereo | Requests stereo playback |
-| Dolby Atmos when available | auto | Requests Atmos where a provider supports it |
+| App preference | Audio resolution |
+|---|---|
+| Maximum Lossless / Hi-Res | Requests the highest lossless or Hi-Res option available from the selected source |
+| High Lossless | Requests a high-quality lossless option where supported |
+| Low / Data Saver | Requests a lower-bandwidth stream where supported |
 
-Audio resolution is determined from metadata actually supplied by a provider, such as codec, bit depth, sample rate and bitrate. When duplicate versions are found, the addon prefers the highest reported resolution. A request setting is not a guarantee: the actual stream depends on the provider and source recording. Missing metadata is treated as unknown. Dolby Atmos is reported as detected only when the upstream explicitly identifies it; selecting the Atmos preference does not guarantee an Atmos stream.
-
-SoundCloud is included only when a track is marked playable and exposes a non-preview full-length stream. SoundCloud streams are lossy (for example MP3, AAC or Opus); they are not presented as lossless. The addon does not upsample audio or convert a lossy source into lossless audio. `checkValidLossless: 0` disables the app-side lossless compatibility gate; it does not make an unsupported codec or stream playable.
+The addon reports resolution using provider metadata such as codec, sample rate, bit depth and bitrate. It does not upsample or turn a lossy recording into lossless audio. The delivered quality is determined by the stream the provider actually returns.
 
 ## API endpoints
 
 | Method and path | Purpose |
 |---|---|
-| GET /manifest.json | Public BitChord addon manifest |
-| GET /search?q=... | Search primary providers, then fallback providers if needed |
-| GET /stream/:id | Resolve a selected track to a playable stream |
-| GET /health | Provider configuration, circuit state, request counts, failures and average latency |
+| GET /manifest.json | Serves the BitChord manifest and addon capabilities. |
+| GET /search?q=... | Finds tracks across primary sources and tops up results from fallbacks when needed. |
+| GET /stream/:id | Resolves a selected track to a playable stream, checking preferred sources and mirrors. |
+| GET /health | Reports provider availability, circuit-breaker state and request health metrics. |
 
 All routes except the manifest require valid BitChord hardware-backed request proof for the configured hostname.
 
@@ -77,9 +65,9 @@ npm start
 
 The server listens on the port supplied through `PORT` (default: `10000`) and binds to `0.0.0.0`. Set the platform start command to `npm start`.
 
-## Configuration
+## Environment
 
-Set environment variables in the deployment environment. Do not commit private URLs, access tokens, or credentials.
+Set environment variables in the deployment environment. Keep private URLs, access tokens and credentials out of source control.
 
 | Variable | Purpose |
 |---|---|
@@ -89,19 +77,16 @@ Set environment variables in the deployment environment. Do not commit private U
 | JUANJO_QOBUZ_UPSTREAM_URL | Optional Juanjo Qobuz upstream override |
 | JUANJO_NETEASE_METING_URL | Optional Juanjo Netease endpoint override |
 
-The hostname used for BitChord proof validation must match the public hostname used by the app. On Render, `RENDER_EXTERNAL_HOSTNAME` is used automatically when `BITCHORD_HOSTS` is not set. For other platforms, configure `BITCHORD_HOSTS` explicitly.
+The hostname used for BitChord proof validation must match the public hostname. On Render, `RENDER_EXTERNAL_HOSTNAME` is used automatically when `BITCHORD_HOSTS` is not set; on other platforms, set `BITCHORD_HOSTS` explicitly.
 
-## Development notes
+## Deployment notes
 
-- `npm test` runs JavaScript syntax checks and the automated test suite, including matching and circuit-breaker tests.
-- `npm run smoke:providers` performs live search, stream resolution and a short HTTP media-range probe for configured providers. It needs network access and may report individual upstream outages.
-- GitHub Actions also runs the live provider smoke check weekly and supports manual runs from the Actions tab.
-- Keep provider URLs and credentials in environment variables.
-- External provider APIs can change independently; use the live provider smoke workflow after changing provider endpoints. A successful short range probe verifies that a media response is reachable, not that an entire song plays to completion.
-- Search and stream responses are cached briefly to reduce repeated upstream requests. Search results are capped at 60 tracks, query length is limited to 200 characters, and per-track metadata cache size is bounded.
-- The addon returns provider stream URLs directly; playback speed and buffering also depend on the upstream host, stream URL lifetime, network and player.
-- The manifest currently enables downloads with `allowDownloads: 1`. Actual download support depends on the selected provider returning a compatible, accessible media URL.
+- Deploy with `npm start`; configure the platform's `PORT` and public hostname.
+- Run `npm test` before deployment. Use `npm run smoke:providers` or the GitHub Actions provider-smoke workflow to check live upstreams.
+- Provider availability and returned stream quality depend on external services and can change independently.
+- A successful short media-range probe confirms an accessible response, not uninterrupted full-track playback.
 
 ## Related source
 
+- [WioLand source collection](https://github.com/Wiojelt/WioLand)
 - [Juanjo Hi-Res addon](https://github.com/juanjoblol/bitchord-hires-addon)
