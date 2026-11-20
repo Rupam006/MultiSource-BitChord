@@ -5,8 +5,8 @@ import { wioAddonProviders } from "../src/providers/wio-addons.js";
 test("WioLand sources are assigned to the requested primary and fallback tiers", () => {
   assert.deepEqual(wioAddonProviders.map(({ id, role }) => [id, role]), [
     ["eljohn-mono", "primary"],
+    ["qobuz-addon", "primary"],
     ["confih", "fallback"],
-    ["qobuz-addon", "fallback"],
     ["gglos", "fallback"],
     ["lastbabe", "fallback"],
     ["tido", "fallback"]

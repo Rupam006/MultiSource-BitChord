@@ -9,8 +9,8 @@ const QUALITY_CHOICES = {
 
 const definitions = [
   { id: "eljohn-mono", name: "Eljohnzc Monochrome", role: "primary", baseUrl: "https://eljohnzc-mono.de.deplexo.com" },
+  { id: "qobuz-addon", name: "Qobuz Addon", role: "primary", baseUrl: "https://qobuz-addon.vercel.app" },
   { id: "confih", name: "Confih Hi-Res", role: "fallback", baseUrl: "https://bitchord.confih.tech" },
-  { id: "qobuz-addon", name: "Qobuz Addon", role: "fallback", baseUrl: "https://qobuz-addon.vercel.app" },
   { id: "gglos", name: "gglos", role: "fallback", baseUrl: "https://gglos.geisselgottes.cfd" },
   { id: "lastbabe", name: "LastBabe", role: "fallback", baseUrl: "https://lastbabe-addon.de.deplexo.com" },
   { id: "tido", name: "Tido", role: "fallback", baseUrl: "https://tido.tido.tido.dpdns.org" }
