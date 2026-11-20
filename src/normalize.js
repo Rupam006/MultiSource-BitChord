@@ -153,7 +153,7 @@ const DISTINCT_VERSION_MARKERS = [
 
 function versionMarkers(value) {
   const raw = String(value || "").toLowerCase().normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+    .replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
   const padded = ` ${raw} `;
   return DISTINCT_VERSION_MARKERS.filter((marker) => padded.includes(` ${marker} `));
 }
@@ -188,5 +188,6 @@ export function trackMatchScore(left, right) {
   const artistScore = leftArtist && rightArtist
     ? tokenSimilarity(leftArtist, rightArtist)
     : 0.5;
+  if (leftArtist && rightArtist && artistScore < 0.25) return 0.45;
   return titleScore * 0.78 + artistScore * 0.22;
 }
