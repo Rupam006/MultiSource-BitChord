@@ -130,9 +130,9 @@ async function deezerSearch(query) {
   }) : null), "Deezer catalogue");
 }
 
-function provider(id, name, searchFn, resolveFn) {
+function provider(id, name, searchFn, resolveFn, role = "fallback") {
   return {
-    id, name, role: "primary", enabled: true, baseUrl: "direct-upstream",
+    id, name, role, enabled: true, baseUrl: "direct-upstream",
     async search(query, quality, atmos) {
       const rows = await searchFn(String(query || "").trim());
       return rows.map((row) => normalizeTrack(row, id, quality, atmos)).filter(Boolean);
@@ -142,7 +142,7 @@ function provider(id, name, searchFn, resolveFn) {
 }
 
 export const juanjoProviders = [
-  provider("juanjo-qobuz", "Qobuz (Juanjo upstream)", qobuzSearch, qobuzResolve),
-  provider("juanjo-netease", "Netease (Meting)", neteaseSearch, neteaseResolve),
-  provider("juanjo-deezer", "Deezer catalogue (mirror playback)", deezerSearch, null)
+  provider("juanjo-qobuz", "Qobuz (Juanjo upstream)", qobuzSearch, qobuzResolve, "fallback"),
+  provider("juanjo-netease", "Netease (Meting)", neteaseSearch, neteaseResolve, "primary"),
+  provider("juanjo-deezer", "Deezer catalogue (mirror playback)", deezerSearch, null, "fallback")
 ];
