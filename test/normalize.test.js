@@ -82,3 +82,11 @@ test("deduplicates provider variants with small duration differences", () => {
   ];
   assert.equal(dedupeTracks(rows).length, 1);
 });
+
+
+test("keeps second-based durations and converts explicit millisecond durations", () => {
+  const seconds = normalizeTrack({ id: "seconds", title: "Seconds", duration: 5400 }, "demo");
+  const milliseconds = normalizeTrack({ id: "milliseconds", title: "Milliseconds", durationMs: 183000 }, "demo");
+  assert.equal(seconds.duration, 5400);
+  assert.equal(milliseconds.duration, 183);
+});
