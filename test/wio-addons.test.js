@@ -41,6 +41,28 @@ test("generic WioLand addon adapter reads manifest quality options and resolves 
   }
 });
 
+test("maps WioLand artistNames, album objects, artwork and millisecond durations", async () => {
+  const provider = wioAddonProviders.find((item) => item.id === "gglos");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    const body = url.pathname === "/manifest.json"
+      ? { id: "fixture" }
+      : { tracks: [{ id: "track%2F42", title: "Mapped Song", artistNames: ["Artist One", "Artist Two"], album: { title: "Album", cover: "https://img.example/cover.jpg" }, duration: 183000 }] };
+    return { ok: true, status: 200, async json() { return body; } };
+  };
+  try {
+    const [track] = await provider.search("Mapped Song", "lossless");
+    assert.equal(track._upstreamId, "track/42");
+    assert.equal(track.artist, "Artist One, Artist Two");
+    assert.equal(track.album, "Album");
+    assert.equal(track.duration, 183);
+    assert.equal(track.artworkURL, "https://img.example/cover.jpg");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("generic WioLand addon adapter rejects encrypted and non-HTTPS streams", async () => {
   const provider = wioAddonProviders.find((item) => item.id === "tido");
   const originalFetch = globalThis.fetch;

@@ -27,6 +27,37 @@ function rowsFrom(payload) {
   return Array.isArray(rows) ? rows : [];
 }
 
+function mapAddonTrack(row) {
+  if (!row || typeof row !== "object") return row;
+  let id = row.id ?? row.trackId;
+  if (id == null) return row;
+  try { id = decodeURIComponent(String(id)); } catch { id = String(id); }
+  const artist = row.artistNames
+    ? (Array.isArray(row.artistNames) ? row.artistNames.join(", ") : String(row.artistNames))
+    : row.artist && typeof row.artist === "object"
+      ? row.artist.name || ""
+      : row.artist || (Array.isArray(row.artists)
+        ? row.artists.map((item) => typeof item === "string" ? item : item?.name).filter(Boolean).join(", ")
+        : "");
+  const album = row.album && typeof row.album === "object"
+    ? row.album.title || ""
+    : row.album || row.albumTitle || row.releaseTitle || "";
+  const rawDuration = Number(row.durationMs ?? row.duration ?? row.durationSeconds ?? 0);
+  const durationMs = row.durationMs != null ? rawDuration
+    : rawDuration > 10000 ? rawDuration : undefined;
+  const duration = durationMs == null ? rawDuration : undefined;
+  const artworkURL = row.artworkURL || row.albumArtworkURL || row.artwork ||
+    row.albumArtwork || row.cover || (row.album && typeof row.album === "object" ? row.album.cover : undefined);
+  return {
+    ...row,
+    id: String(id),
+    artist,
+    album,
+    ...(durationMs != null ? { durationMs } : duration > 0 ? { duration } : {}),
+    ...(artworkURL ? { artworkURL } : {})
+  };
+}
+
 function makeProvider(definition) {
   const baseUrl = definition.baseUrl.replace(/\/+$/, "");
   let manifestCache = null;
@@ -94,7 +125,7 @@ function makeProvider(definition) {
       if (!params.q) return [];
       const payload = await requestJson("/search?" + new URLSearchParams(params));
       return rowsFrom(payload).slice(0, 30)
-        .map((row) => normalizeTrack(row, definition.id, cleanQuality(quality), atmos))
+        .map((row) => normalizeTrack(mapAddonTrack(row), definition.id, cleanQuality(quality), atmos))
         .filter(Boolean);
     },
     async resolve(upstreamId, quality, atmos = "stereo") {
