@@ -28,7 +28,7 @@ function rowsFrom(payload) {
 }
 
 function makeProvider(definition) {
-  const baseUrl = definition.baseUrl.replace(/\\/+$/, "");
+  const baseUrl = definition.baseUrl.replace(/\/+$/, "");
   let manifestCache = null;
   let manifestExpiresAt = 0;
   let manifestRequest = null;
@@ -106,7 +106,7 @@ function makeProvider(definition) {
           ? payload.data
           : payload;
       const url = stream?.url || stream?.streamURL || stream?.streamUrl || stream?.downloadUrl;
-      if (typeof url !== "string" || !/^https:\\/\\//i.test(url) ||
+      if (typeof url !== "string" || !/^https:\/\//i.test(url) ||
           [true, 1, "true", "1"].includes(stream?.encrypted)) return null;
       const sampleRate = Number(stream.sampleRate ?? stream.sample_rate);
       const bitDepth = Number(stream.bitDepth ?? stream.bit_depth);
