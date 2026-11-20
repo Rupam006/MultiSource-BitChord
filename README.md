@@ -9,7 +9,8 @@ A multi-source BitChord music addon that searches independent music providers, c
 - Compares duplicate tracks and prefers the highest reported audio resolution.
 - Tries other primary providers first for playback mirrors, then fallback providers if no primary mirror resolves.
 - Supports lossless, high-quality, data-saver and spatial-audio request preferences.
-- Provides BitChord-authenticated endpoints and provider health status.
+- Provides BitChord-authenticated endpoints, provider health metrics and automatic circuit breakers.
+- Matches playback mirrors using title, artist, duration and version markers to avoid mixing live, remix and studio recordings.
 
 ## Providers
 
@@ -25,7 +26,7 @@ A multi-source BitChord music addon that searches independent music providers, c
 
 Primary providers are Netease, Official Monochrome and PencariMusic. Fallback providers are Qobuz, Deezer catalogue, SoundCloud and prodpwh (when configured). Search checks all primary providers concurrently and searches fallback providers when fewer than 12 unique primary results are available, then ranks the combined results by relevance and reported resolution. Playback resolution tries the selected provider and other primary mirrors first; fallback mirrors are tried only when no primary mirror can resolve the track. Duplicate-track selection and audio-resolution scoring are unchanged.
 
-Provider endpoints are external dependencies and may change, rate-limit requests, or become unavailable. A configured adapter is not a guarantee of upstream availability.
+Provider endpoints are external dependencies and may change, rate-limit requests, or become unavailable. A configured adapter is not a guarantee of upstream availability. Provider health tracks consecutive failures, request counts and average latency. After three consecutive errors, a provider circuit opens for 30 seconds and backs off on repeated failures; a single half-open probe tests recovery before normal traffic resumes.
 
 ## Audio quality
 
@@ -48,7 +49,7 @@ SoundCloud is included only when a track is marked playable and exposes a non-pr
 | GET /manifest.json | Public BitChord addon manifest |
 | GET /search?q=... | Search primary providers, then fallback providers if needed |
 | GET /stream/:id | Resolve a selected track to a playable stream |
-| GET /health | Provider configuration and availability status |
+| GET /health | Provider configuration, circuit state, request counts, failures and average latency |
 
 All routes except the manifest require valid BitChord hardware-backed request proof for the configured hostname.
 
@@ -82,9 +83,11 @@ The hostname used for BitChord proof validation must match the public hostname u
 
 ## Development notes
 
-- `npm test` runs JavaScript syntax checks and the automated test suite.
+- `npm test` runs JavaScript syntax checks and the automated test suite, including matching and circuit-breaker tests.
+- `npm run smoke:providers` performs live search, stream resolution and a short HTTP media-range probe for configured providers. It needs network access and may report individual upstream outages.
+- GitHub Actions also runs the live provider smoke check weekly and supports manual runs from the Actions tab.
 - Keep provider URLs and credentials in environment variables.
-- External provider APIs can change independently; verify search and playback after changing provider endpoints.
+- External provider APIs can change independently; use the live provider smoke workflow after changing provider endpoints. A successful short range probe verifies that a media response is reachable, not that an entire song plays to completion.
 - Search and stream responses are cached briefly to reduce repeated upstream requests. Search results are capped at 60 tracks, query length is limited to 200 characters, and per-track metadata cache size is bounded.
 - The addon returns provider stream URLs directly; playback speed and buffering also depend on the upstream host, stream URL lifetime, network and player.
 - The manifest currently enables downloads with `allowDownloads: 1`. Actual download support depends on the selected provider returning a compatible, accessible media URL.
