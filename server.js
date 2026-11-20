@@ -13,6 +13,8 @@ const manifest = JSON.parse(readFileSync(new URL("./manifest.json", import.meta.
 const searchCache = new Map();
 const streamCache = new Map();
 const trackMetadata = new Map();
+const searchInflight = new Map();
+const streamInflight = new Map();
 const SEARCH_TTL = 3 * 60 * 1000;
 const STREAM_TTL = 45 * 1000;
 
@@ -73,7 +75,7 @@ function saveTrackMetadata(id, metadata) {
   trackMetadata.set(id, metadata);
 }
 
-async function searchAll(query, quality, atmos, authHeaders) {
+async function searchAllUncached(query, quality, atmos, authHeaders) {
   const normalizedQuery = String(query).trim().toLowerCase().replace(/\\s+/g, " ");
   const key = `${quality}:${atmos}:${normalizedQuery}`;
   const hit = cached(searchCache, key);
@@ -114,6 +116,15 @@ async function searchAll(query, quality, atmos, authHeaders) {
     sources: result.sources,
     searchMode: result.searchMode
   }, SEARCH_TTL);
+}
+
+async function searchAll(query, quality, atmos, authHeaders) {
+  const key = `${quality}:${atmos}:${String(query).trim().toLowerCase().replace(/\\s+/g, " ")}`;
+  if (searchInflight.has(key)) return searchInflight.get(key);
+  const pending = searchAllUncached(query, quality, atmos, authHeaders);
+  searchInflight.set(key, pending);
+  try { return await pending; }
+  finally { if (searchInflight.get(key) === pending) searchInflight.delete(key); }
 }
 
 async function resolveMirrorTier(providers, metadata, query, quality, atmos, authHeaders) {
@@ -157,7 +168,7 @@ async function resolveMirrorTier(providers, metadata, query, quality, atmos, aut
   return resolved.filter((result) => result.status === "fulfilled").map((result) => result.value);
 }
 
-async function resolveTrack(encodedId, quality, atmos, authHeaders) {
+async function resolveTrackUncached(encodedId, quality, atmos, authHeaders) {
   const parsed = unpackTrackId(encodedId);
   if (!parsed) return null;
   const cacheKey = `${encodedId}:${quality}:${atmos}`;
@@ -203,6 +214,15 @@ async function resolveTrack(encodedId, quality, atmos, authHeaders) {
   if (!candidates.length) return null;
   candidates.sort((a, b) => b.score - a.score || b.matchScore - a.matchScore);
   return save(streamCache, cacheKey, candidates[0].stream, STREAM_TTL);
+}
+
+async function resolveTrack(encodedId, quality, atmos, authHeaders) {
+  const key = `${encodedId}:${quality}:${atmos}`;
+  if (streamInflight.has(key)) return streamInflight.get(key);
+  const pending = resolveTrackUncached(encodedId, quality, atmos, authHeaders);
+  streamInflight.set(key, pending);
+  try { return await pending; }
+  finally { if (streamInflight.get(key) === pending) streamInflight.delete(key); }
 }
 
 function similarity(a, b) {
