@@ -214,7 +214,7 @@ async function resolveTrack(id) {
 export const soundcloudProvider = {
   id: "soundcloud",
   name: "SoundCloud",
-  role: "primary",
+  role: "fallback",
   enabled: true,
   baseUrl: "https://api-v2.soundcloud.com",
   async search(query, quality, atmos) {
