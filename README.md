@@ -16,29 +16,29 @@ A BitChord music-streaming addon that brings multiple independent music sources 
 
 | Source | Role | Highest quality level | Source / note |
 |---|---|---|---|
-| Netease (Meting) | Primary | Lossless (provider/catalogue dependent) | Existing Juanjo Netease upstream adapter |
-| Official Monochrome | Primary | Lossless / Hi-Res where available | Existing Monochrome adapter; validates FLAC stream metadata |
-| Eljohnzc Monochrome | Primary | Lossless / Hi-Res where available | WioLand source module |
-| Confih Hi-Res | Fallback | Hi-Res lossless where available | WioLand Confih source module |
-| Qobuz Addon | Fallback | Hi-Res lossless where available | WioLand Qobuz Addon module |
-| Juanjo Qobuz | Fallback | Hi-Res lossless where available | Existing direct Juanjo Qobuz upstream adapter |
-| gglos | Fallback | Lossless / Hi-Res where available | WioLand source module |
-| LastBabe | Fallback | Lossless / Hi-Res where available | WioLand source module |
-| Tido | Fallback | Lossless / Hi-Res where available | WioLand source module |
-| Deezer catalogue | Fallback | Lossless catalogue metadata; playback resolved by another source | Existing Juanjo Deezer catalogue adapter; not an independent stream resolver |
-| prodpwh | Fallback | Depends on configured addon | Optional private addon, enabled through environment |
+| Netease (Meting) | Primary | Lossless: up to 16-bit/44.1 kHz (~1,411 kbps PCM) | Existing Juanjo Netease upstream adapter |
+| Official Monochrome | Primary | Hi-Res: up to 24-bit/192 kHz (~9,216 kbps PCM) | Existing Monochrome adapter; validates FLAC stream metadata |
+| Eljohnzc Monochrome | Primary | Hi-Res: up to 24-bit/192 kHz (~9,216 kbps PCM) | WioLand source module |
+| Confih Hi-Res | Fallback | Hi-Res: up to 24-bit/192 kHz (~9,216 kbps PCM) | WioLand Confih source module |
+| Qobuz Addon | Fallback | Hi-Res: up to 24-bit/192 kHz (~9,216 kbps PCM) | WioLand Qobuz Addon module |
+| Juanjo Qobuz | Fallback | Hi-Res: up to 24-bit/192 kHz (~9,216 kbps PCM) | Existing direct Juanjo Qobuz upstream adapter |
+| gglos | Fallback | Lossless / Hi-Res: up to 24-bit/192 kHz (~9,216 kbps PCM) | WioLand source module |
+| LastBabe | Fallback | Lossless / Hi-Res: up to 24-bit/192 kHz (~9,216 kbps PCM) | WioLand source module |
+| Tido | Fallback | Lossless / Hi-Res: up to 24-bit/192 kHz (~9,216 kbps PCM) | WioLand source module |
+| Deezer catalogue | Fallback | Lossless catalogue metadata: up to 16-bit/44.1 kHz (~1,411 kbps PCM); playback resolved by another source | Existing Juanjo Deezer catalogue adapter; not an independent stream resolver |
+| prodpwh | Fallback | Depends on configured addon; bitrate and resolution vary | Optional private addon, enabled through environment |
 
-*Quality levels describe the highest level a source may offer, not a guarantee for every track. Actual stream quality depends on the recording, provider response and available metadata.*
+*These are format ceilings, not guarantees for every track. The kbps figures are uncompressed PCM-equivalent bitrates; actual compressed FLAC bitrates vary with the audio. Stream quality depends on the recording, provider response and available metadata.*
 
 ## Audio quality
 
-| App preference | Audio resolution |
+| App preference | Audio resolution and bitrate |
 |---|---|
-| Maximum Lossless / Hi-Res | Requests the highest lossless or Hi-Res option available from the selected source |
-| High Lossless | Requests a high-quality lossless option where supported |
-| Low / Data Saver | Requests a lower-bandwidth stream where supported |
+| Maximum Lossless / Hi-Res | Up to 24-bit/192 kHz (~9,216 kbps PCM-equivalent) when the source and track provide it |
+| High Lossless | Up to 16-bit/44.1 kHz (~1,411 kbps PCM-equivalent) where supported |
+| Low / Data Saver | Lower-bitrate, bandwidth-saving audio; actual bitrate varies by provider and track |
 
-The addon reports resolution using provider metadata such as codec, sample rate, bit depth and bitrate. It does not upsample or turn a lossy recording into lossless audio. The delivered quality is determined by the stream the provider actually returns.
+The kbps figures are uncompressed PCM-equivalent rates, not fixed FLAC stream bitrates. The addon reports the provider's available codec, sample rate, bit depth and bitrate; it does not upsample or convert lossy audio into lossless. Actual delivered quality depends on the stream returned by the provider.
 
 ## API endpoints
 
