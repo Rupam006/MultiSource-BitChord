@@ -69,7 +69,7 @@ async function neteaseSearch(query) {
   return mapRows(rows.map((item) => {
     const match = /[?&]id=(\d+)/.exec(String(item?.url || ""));
     if (!match || !item?.name) return null;
-    return { id: match[1], title: item.name, artist: Array.isArray(item.artist) ? item.artist.join(", ") : String(item.artist || ""), album: String(item.album || ""), artworkURL: item.pic || undefined, format: "flac", audioQuality: "LOSSLESS" };
+    return { id: match[1], title: item.name, artist: Array.isArray(item.artist) ? item.artist.join(", ") : String(item.artist || ""), album: String(item.album || ""), artworkURL: item.pic || undefined, format: "unknown", audioQuality: "UNKNOWN" };
   }), "Netease");
 }
 async function probeFlac(url) {
