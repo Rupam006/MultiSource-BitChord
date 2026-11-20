@@ -8,7 +8,7 @@ const QUALITY_LEVELS = new Set(["lossless", "high", "low"]);
 
 const definitions = [
   { id: "pencari", name: "PencariMusic", role: "primary", baseUrl: "https://stream.pencarimovie.com/66ff097863dedb7ccd8401d5ffe616f3/music", enabled: true },
-  { id: "prodpwh", name: "prodpwh", role: "primary", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
+  { id: "prodpwh", name: "prodpwh", role: "fallback", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
 ];
 
 function normalizeQuality(value) {
@@ -90,6 +90,8 @@ const providers = definitions.map((definition) => ({
 }));
 
 export const allProviders = [...providers, monochromeProvider, soundcloudProvider, ...juanjoProviders];
+export const primaryProviders = allProviders.filter((provider) => provider.role === "primary");
+export const fallbackProviders = allProviders.filter((provider) => provider.role === "fallback");
 export function providerStatus() {
   return allProviders.map(({ id, name, role, enabled, baseUrl, note }) => ({
     id, name, role, enabled: Boolean(enabled && baseUrl), ...(note ? { note } : {})
