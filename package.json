@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "node --check server.js && node --check src/auth.js && node --check src/normalize.js && node --check src/provider-health.js && node --check scripts/provider-smoke.js && node --check src/providers/index.js && node --check src/providers/juanjo.js && node --check src/providers/monochrome.js && node --check src/providers/soundcloud.js && node -e \"JSON.parse(require('node:fs').readFileSync('manifest.json', 'utf8'))\" && node --test",
+    "test": "node --check server.js && node --check src/auth.js && node --check src/normalize.js && node --check src/provider-health.js && node --check scripts/provider-smoke.js && node --check src/providers/index.js && node --check src/providers/juanjo.js && node --check src/providers/monochrome.js && node --check src/providers/wio-addons.js && node -e \"JSON.parse(require('node:fs').readFileSync('manifest.json', 'utf8'))\" && node --check test/wio-addons.test.js && node --test",
     "smoke:providers": "node scripts/provider-smoke.js"
   }
 }

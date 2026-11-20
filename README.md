@@ -4,7 +4,9 @@ A multi-source BitChord music addon that searches independent music providers, c
 
 ## Features
 
-- Searches Netease, Official Monochrome and PencariMusic as primary sources first; fallback providers top up small primary result sets.
+- Searches Netease, Official Monochrome and Eljohnzc Monochrome as primary sources first; fallback providers top up small primary result sets.
+- Keeps the Juanjo Qobuz adapter and Deezer catalogue in the fallback tier; Deezer remains catalogue-only.
+- Adds Confih Hi-Res, Qobuz Addon, gglos, LastBabe and Tido as fallback sources.
 - Ranks results by title/artist relevance, then reported audio resolution; normalizes accents and common title variants for duplicate detection.
 - Compares duplicate tracks and prefers the highest reported audio resolution.
 - Tries other primary providers first for playback mirrors, then fallback providers if no primary mirror resolves.
@@ -14,17 +16,25 @@ A multi-source BitChord music addon that searches independent music providers, c
 
 ## Providers
 
-| Provider | Source |
-|---|---|
-| PencariMusic | PencariMovie Telegram music addon |
-| prodpwh | Private BitChord addon; configured separately |
-| Official Monochrome | Official Monochrome Tracks API and direct FLAC streaming |
-| SoundCloud | Publicly playable full-length SoundCloud tracks; progressive and HLS streams |
-| Juanjo Qobuz | Qobuz search and stream source |
-| Juanjo Netease | Netease catalogue/stream bridge |
-| Juanjo Deezer | Deezer catalogue source; playback may resolve through another provider |
+| Provider | Role | Notes |
+|---|---|---|
+| Netease (Meting) | Primary | Existing Juanjo upstream adapter |
+| Official Monochrome | Primary | Existing adapter validates actual FLAC STREAMINFO before accepting a stream |
+| Eljohnzc Monochrome | Primary | WioLand addon; streaming-only source |
+| Confih Hi-Res | Fallback | WioLand addon |
+| Qobuz Addon | Fallback | WioLand addon |
+| Juanjo Qobuz | Fallback | Existing direct upstream adapter |
+| gglos | Fallback | WioLand addon |
+| LastBabe | Fallback | WioLand addon |
+| Tido | Fallback | WioLand addon |
+| Deezer catalogue | Fallback | Catalogue-only; playback must resolve through an audio provider |
+| prodpwh | Fallback | Private addon; enabled only when configured |
 
-Primary providers are Netease, Official Monochrome and PencariMusic. Fallback providers are Qobuz, Deezer catalogue, SoundCloud and prodpwh (when configured). Search checks all primary providers concurrently and searches fallback providers when fewer than 12 unique primary results are available, then ranks the combined results by relevance and reported resolution. Playback resolution tries the selected provider and other primary mirrors first; fallback mirrors are tried only when no primary mirror can resolve the track. Duplicate-track selection and audio-resolution scoring are unchanged.
+The WioLand Juanjob module is not used as a replacement: the current Juanjo Hi-Res addon advertises hardware-backed BitChord authentication for /search and /stream, but the WioLand module calls those endpoints without forwarding proof headers. The existing Juanjo adapter uses its public Qobuz and Netease upstreams directly instead. The WioLand Monochrome module also does not verify the returned media bytes; the existing Official Monochrome adapter probes the FLAC header and reads the actual sample rate and bit depth, so it is retained.
+
+The WioLand Wiochord Lossless module is an aggregator rather than an independent provider. Its search chain internally invokes Qobuz, Confih and Juanjob, which would bypass the requested primary/fallback tiers; its stream path also routes non-Qobuz IDs back to Monochrome. The separate Dial Monochrome source duplicates the existing Official Monochrome endpoint. Neither is added as a duplicate source.
+
+Search checks all primary providers concurrently and searches fallback providers when fewer than 12 unique primary results are available, then ranks the combined results by relevance and reported resolution. Playback resolution tries the selected provider and other primary mirrors first; fallback mirrors are tried only when no primary mirror can resolve the track. Duplicate-track selection and audio-resolution scoring are unchanged.
 
 Provider endpoints are external dependencies and may change, rate-limit requests, or become unavailable. A configured adapter is not a guarantee of upstream availability. Provider health tracks consecutive failures, request counts and average latency. After three consecutive errors, a provider circuit opens for 30 seconds and backs off on repeated failures; a single half-open probe tests recovery before normal traffic resumes.
 

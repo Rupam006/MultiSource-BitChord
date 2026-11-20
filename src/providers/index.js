@@ -1,14 +1,13 @@
 import { normalizeTrack } from "../normalize.js";
 import { juanjoProviders } from "./juanjo.js";
 import { monochromeProvider } from "./monochrome.js";
-import { soundcloudProvider } from "./soundcloud.js";
+import { wioAddonProviders } from "./wio-addons.js";
 import { createProviderHealthTracker } from "../provider-health.js";
 
 const DEFAULT_TIMEOUT_MS = 6500;
 const QUALITY_LEVELS = new Set(["lossless", "high", "low"]);
 
 const definitions = [
-  { id: "pencari", name: "PencariMusic", role: "primary", baseUrl: "https://stream.pencarimovie.com/66ff097863dedb7ccd8401d5ffe616f3/music", enabled: true },
   { id: "prodpwh", name: "prodpwh", role: "fallback", baseUrl: process.env.PRODPWH_ADDON_URL || "", enabled: Boolean(process.env.PRODPWH_ADDON_URL) },
 ];
 
@@ -90,7 +89,7 @@ const providers = definitions.map((definition) => ({
   }
 }));
 
-export const allProviders = [...providers, monochromeProvider, soundcloudProvider, ...juanjoProviders];
+export const allProviders = [...providers, monochromeProvider, ...wioAddonProviders, ...juanjoProviders];
 const providerHealth = createProviderHealthTracker(allProviders);
 for (const provider of allProviders) {
   providerHealth.wrap(provider, "search");
