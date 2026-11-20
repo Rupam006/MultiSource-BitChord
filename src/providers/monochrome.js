@@ -2,7 +2,7 @@ import { normalizeTrack } from "../normalize.js";
 
 const BASE_URL = "https://tracks.monochrome.st";
 const USER_AGENT = "MultiSource-BitChord/1.0";
-const TIMEOUT_MS = 9000;
+const TIMEOUT_MS = 20_000;
 
 async function requestJson(url) {
   const controller = new AbortController();

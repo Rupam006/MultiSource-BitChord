@@ -4,7 +4,7 @@ import { monochromeProvider } from "./monochrome.js";
 import { wioAddonProviders } from "./wio-addons.js";
 import { createProviderHealthTracker } from "../provider-health.js";
 
-const DEFAULT_TIMEOUT_MS = 6500;
+const DEFAULT_TIMEOUT_MS = 20_000;
 const QUALITY_LEVELS = new Set(["lossless", "high", "low"]);
 
 const definitions = [
@@ -57,7 +57,7 @@ const providers = definitions.map((definition) => ({
       quality: normalizeQuality(quality),
       atmos: atmos === "auto" ? "auto" : "stereo"
     });
-    const payload = await this.request(`/stream/${encodeURIComponent(upstreamId)}?${params}`, 8500, {});
+    const payload = await this.request(`/stream/${encodeURIComponent(upstreamId)}?${params}`, 20_000, {});
     if (!payload || typeof payload !== "object") return null;
     const streamData = payload.stream && typeof payload.stream === "object" ? payload.stream : payload;
     const url = streamData.url || streamData.streamURL || streamData.streamUrl || streamData.downloadUrl;

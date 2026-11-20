@@ -2,7 +2,7 @@ import { normalizeTrack } from "../normalize.js";
 
 const UA = "MultiSource-BitChord/1.2";
 const JSON_HEADERS = { accept: "application/json", "user-agent": UA };
-const TIMEOUT_MS = 9000;
+const TIMEOUT_MS = 20_000;
 
 async function requestJson(url, timeoutMs = TIMEOUT_MS, headers = {}) {
   const controller = new AbortController();
@@ -49,7 +49,7 @@ async function qobuzSearch(query) {
 }
 async function qobuzResolve(id, quality) {
   const base = (process.env.JUANJO_QOBUZ_UPSTREAM_URL || "https://soundfean-musics.onrender.com/a").replace(/\/+$/, "");
-  const data = await requestJson(`${base}/stream/${encodeURIComponent(id)}?quality=${upstreamQuality(quality)}`, 12000);
+  const data = await requestJson(`${base}/stream/${encodeURIComponent(id)}?quality=${upstreamQuality(quality)}`, 20_000);
   if (!data?.url || !/^https:\/\//i.test(data.url) || data.encrypted === true) return null;
   return {
     url: data.url, codec: data.codec || "unknown", container: data.container || data.codec || "unknown",
@@ -64,7 +64,7 @@ async function qobuzResolve(id, quality) {
 
 const METING = (process.env.JUANJO_NETEASE_METING_URL || "https://api.qijieya.cn/meting/").replace(/\/+$/, "") + "/";
 async function neteaseSearch(query) {
-  const rows = await requestJson(`${METING}?server=netease&type=search&id=${encodeURIComponent(query)}&limit=20`, 10000, { "user-agent": "Mozilla/5.0" });
+  const rows = await requestJson(`${METING}?server=netease&type=search&id=${encodeURIComponent(query)}&limit=20`, 20_000, { "user-agent": "Mozilla/5.0" });
   if (!Array.isArray(rows)) return [];
   return mapRows(rows.map((item) => {
     const match = /[?&]id=(\d+)/.exec(String(item?.url || ""));
@@ -74,7 +74,7 @@ async function neteaseSearch(query) {
 }
 async function probeFlac(url) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
+  const timer = setTimeout(() => controller.abort(), 20_000);
   try {
     const response = await fetch(url, { headers: { range: "bytes=0-63", "user-agent": UA }, signal: controller.signal, redirect: "follow" });
     if (!response.ok && response.status !== 206) return null;
@@ -110,7 +110,7 @@ async function probeFlac(url) {
 
 async function neteaseResolve(id) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 9000);
+  const timer = setTimeout(() => controller.abort(), 20_000);
   try {
     const response = await fetch(`${METING}?server=netease&type=url&id=${encodeURIComponent(id)}&br=999000`, { headers: { "user-agent": "Mozilla/5.0" }, signal: controller.signal, redirect: "manual" });
     const url = response.headers.get("location");

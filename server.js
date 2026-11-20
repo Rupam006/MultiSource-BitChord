@@ -17,7 +17,7 @@ const searchInflight = new Map();
 const streamInflight = new Map();
 const SEARCH_TTL = 3 * 60 * 1000;
 const STREAM_TTL = 45 * 1000;
-const PROVIDER_RESPONSE_WINDOW_MS = 9000;
+const PROVIDER_RESPONSE_WINDOW_MS = 20_000;
 
 function withinDeadline(promise, deadline, label = "provider response window expired") {
   const remaining = Math.max(0, deadline - Date.now());

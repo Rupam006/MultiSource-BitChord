@@ -1,6 +1,6 @@
 import { normalizeTrack } from "../normalize.js";
 
-const REQUEST_TIMEOUT_MS = 9000;
+const REQUEST_TIMEOUT_MS = 20_000;
 const QUALITY_CHOICES = {
   lossless: ["hi_res_lossless", "HI_RES_LOSSLESS", "hi_res", "lossless", "LOSSLESS"],
   high: ["high", "HIGH"],
@@ -130,7 +130,7 @@ function makeProvider(definition) {
     },
     async resolve(upstreamId, quality, atmos = "stereo") {
       const params = await addonParams(quality, atmos);
-      const payload = await requestJson("/stream/" + encodeURIComponent(upstreamId) + "?" + new URLSearchParams(params), 12000);
+      const payload = await requestJson("/stream/" + encodeURIComponent(upstreamId) + "?" + new URLSearchParams(params), 20_000);
       const stream = payload?.stream && typeof payload.stream === "object"
         ? payload.stream
         : payload?.data && typeof payload.data === "object" && !Array.isArray(payload.data)
