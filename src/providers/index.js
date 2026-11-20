@@ -1,6 +1,7 @@
 import { normalizeTrack } from "../normalize.js";
 import { juanjoProviders } from "./juanjo.js";
 import { monochromeProvider } from "./monochrome.js";
+import { soundcloudProvider } from "./soundcloud.js";
 
 const DEFAULT_TIMEOUT_MS = 6500;
 const QUALITY_LEVELS = new Set(["lossless", "high", "low"]);
@@ -88,7 +89,7 @@ const providers = definitions.map((definition) => ({
   }
 }));
 
-export const allProviders = [...providers, monochromeProvider, ...juanjoProviders];
+export const allProviders = [...providers, monochromeProvider, soundcloudProvider, ...juanjoProviders];
 export function providerStatus() {
   return allProviders.map(({ id, name, role, enabled, baseUrl, note }) => ({
     id, name, role, enabled: Boolean(enabled && baseUrl), ...(note ? { note } : {})
