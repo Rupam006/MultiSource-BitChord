@@ -4,7 +4,8 @@ A multi-source BitChord music addon that searches independent music providers, c
 
 ## Features
 
-- Searches Netease, Official Monochrome and PencariMusic as primary sources first; other providers are used only when primary search returns no tracks.
+- Searches Netease, Official Monochrome and PencariMusic as primary sources first; fallback providers top up small primary result sets.
+- Ranks results by title/artist relevance, then reported audio resolution; normalizes accents and common title variants for duplicate detection.
 - Compares duplicate tracks and prefers the highest reported audio resolution.
 - Tries other primary providers first for playback mirrors, then fallback providers if no primary mirror resolves.
 - Supports lossless, high-quality, data-saver and spatial-audio request preferences.
@@ -22,7 +23,7 @@ A multi-source BitChord music addon that searches independent music providers, c
 | Juanjo Netease | Netease catalogue/stream bridge |
 | Juanjo Deezer | Deezer catalogue source; playback may resolve through another provider |
 
-Primary providers are Netease, Official Monochrome and PencariMusic. Fallback providers are Qobuz, Deezer catalogue, SoundCloud and prodpwh (when configured). Search checks all primary providers concurrently and uses fallback search only when the primary tier returns no tracks. Playback resolution tries the selected provider and other primary mirrors first; fallback mirrors are tried only when no primary mirror can resolve the track. Duplicate-track selection and audio-resolution scoring are unchanged.
+Primary providers are Netease, Official Monochrome and PencariMusic. Fallback providers are Qobuz, Deezer catalogue, SoundCloud and prodpwh (when configured). Search checks all primary providers concurrently and searches fallback providers when fewer than 12 unique primary results are available, then ranks the combined results by relevance and reported resolution. Playback resolution tries the selected provider and other primary mirrors first; fallback mirrors are tried only when no primary mirror can resolve the track. Duplicate-track selection and audio-resolution scoring are unchanged.
 
 Provider endpoints are external dependencies and may change, rate-limit requests, or become unavailable. A configured adapter is not a guarantee of upstream availability.
 
@@ -84,7 +85,7 @@ The hostname used for BitChord proof validation must match the public hostname u
 - `npm test` runs JavaScript syntax checks and the automated test suite.
 - Keep provider URLs and credentials in environment variables.
 - External provider APIs can change independently; verify search and playback after changing provider endpoints.
-- Search and stream responses are cached briefly to reduce repeated upstream requests.
+- Search and stream responses are cached briefly to reduce repeated upstream requests. Search results are capped at 60 tracks, query length is limited to 200 characters, and per-track metadata cache size is bounded.
 - The addon returns provider stream URLs directly; playback speed and buffering also depend on the upstream host, stream URL lifetime, network and player.
 - The manifest currently enables downloads with `allowDownloads: 1`. Actual download support depends on the selected provider returning a compatible, accessible media URL.
 
