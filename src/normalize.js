@@ -60,8 +60,8 @@ export function normalizeTrack(track, providerId, requestedQuality = "lossless",
   const artist = Array.isArray(artistValue)
     ? artistValue.map((item) => typeof item === "string" ? item : item?.name).filter(Boolean).join(", ")
     : String(artistValue);
-  const rawDuration = Number(track.duration ?? track.durationSeconds ?? (Number(track.durationMs) ? Number(track.durationMs) / 1000 : 0));
-  const duration = rawDuration > 3600 && !track.durationMs ? rawDuration / 1000 : rawDuration;
+  const rawDuration = Number(track.durationMs ?? track.duration ?? track.durationSeconds ?? 0);
+  const duration = track.durationMs != null ? rawDuration / 1000 : rawDuration > 100000 ? rawDuration / 1000 : rawDuration;
   const sampleRate = Number(track.sampleRate ?? track.sample_rate);
   const bitDepth = Number(track.bitDepth ?? track.bit_depth);
   const bitrate = Number(track.bitrate);
