@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { audioResolutionScore, normalizeTrack, dedupeTracks, unpackTrackId } from "../src/normalize.js";
+import { audioResolutionScore, normalizeTrack, dedupeTracks, unpackTrackId, trackMatchScore } from "../src/normalize.js";
 
 test("normalizes provider track ids and metadata", () => {
   const row = normalizeTrack({ id: "track/42", title: "Signal", artist: [{ name: "Artist A" }, { name: "Artist B" }], durationMs: 183000 }, "demo");
@@ -89,4 +89,25 @@ test("keeps second-based durations and converts explicit millisecond durations",
   const milliseconds = normalizeTrack({ id: "milliseconds", title: "Milliseconds", durationMs: 183000 }, "demo");
   assert.equal(seconds.duration, 5400);
   assert.equal(milliseconds.duration, 183);
+});
+
+
+test("matches equivalent titles across providers despite punctuation and extra release text", () => {
+  const a = { title: "Don't Start Now", artist: "Dua Lipa", duration: 183 };
+  const b = { title: "Dont Start Now - Remastered", artist: "Dua Lipa", duration: 184 };
+  assert.ok(trackMatchScore(a, b) >= 0.72);
+});
+
+test("does not cross-match materially different track versions", () => {
+  const original = { title: "Blinding Lights", artist: "The Weeknd" };
+  const live = { title: "Blinding Lights (Live)", artist: "The Weeknd" };
+  const remix = { title: "Blinding Lights (Remix)", artist: "The Weeknd" };
+  assert.equal(trackMatchScore(original, live), 0);
+  assert.equal(trackMatchScore(original, remix), 0);
+});
+
+test("rejects tracks with unrelated artists even when titles are similar", () => {
+  const a = { title: "Stay", artist: "Rihanna" };
+  const b = { title: "Stay", artist: "Justin Bieber" };
+  assert.ok(trackMatchScore(a, b) < 0.72);
 });
