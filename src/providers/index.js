@@ -2,6 +2,7 @@ import { normalizeTrack } from "../normalize.js";
 import { juanjoProviders } from "./juanjo.js";
 import { monochromeProvider } from "./monochrome.js";
 import { soundcloudProvider } from "./soundcloud.js";
+import { createProviderHealthTracker } from "../provider-health.js";
 
 const DEFAULT_TIMEOUT_MS = 6500;
 const QUALITY_LEVELS = new Set(["lossless", "high", "low"]);
@@ -90,11 +91,23 @@ const providers = definitions.map((definition) => ({
 }));
 
 export const allProviders = [...providers, monochromeProvider, soundcloudProvider, ...juanjoProviders];
+const providerHealth = createProviderHealthTracker(allProviders);
+for (const provider of allProviders) {
+  providerHealth.wrap(provider, "search");
+  providerHealth.wrap(provider, "resolve");
+}
 export const primaryProviders = allProviders.filter((provider) => provider.role === "primary");
 export const fallbackProviders = allProviders.filter((provider) => provider.role === "fallback");
+export function isProviderAvailable(provider) {
+  return Boolean(provider?.enabled && provider?.baseUrl && providerHealth.isAvailable(provider));
+}
 export function providerStatus() {
-  return allProviders.map(({ id, name, role, enabled, baseUrl, note }) => ({
-    id, name, role, enabled: Boolean(enabled && baseUrl), ...(note ? { note } : {})
+  return allProviders.map((provider) => ({
+    id: provider.id,
+    name: provider.name,
+    role: provider.role,
+    enabled: Boolean(provider.enabled && provider.baseUrl),
+    ...providerHealth.status(provider)
   }));
 }
 export function findProvider(id) { return allProviders.find((provider) => provider.id === id); }
